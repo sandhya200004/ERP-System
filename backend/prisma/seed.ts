@@ -42,18 +42,18 @@ async function main() {
   // Hash the password
   const passwordHash = await bcrypt.hash('admin123', 10);
 
-  // Create admin user
+  // Create admin user - veerajmatnale
   const adminUser = await prisma.users.upsert({
-    where: { email: 'admin@triverse.com' },
+    where: { email: 'veerajmatnale@triverse.com' },
     update: {
       password_hash: passwordHash,
     },
     create: {
       id: '00000000-0000-0000-0000-000000000002',
-      email: 'admin@triverse.com',
+      email: 'veerajmatnale@triverse.com',
       password_hash: passwordHash,
-      first_name: 'Admin',
-      last_name: 'User',
+      first_name: 'Veeraj',
+      last_name: 'Matnale',
       status: 'active',
       email_verified_at: new Date(),
       updated_at: new Date(),
@@ -192,7 +192,7 @@ async function main() {
   console.log('Admin role assigned to user');
   console.log('\n✅ Seed completed successfully!');
   console.log('\nLogin credentials:');
-  console.log('Email: admin@triverse.com');
+  console.log('Email: veerajmatnale@triverse.com');
   console.log('Password: admin123');
 }
 

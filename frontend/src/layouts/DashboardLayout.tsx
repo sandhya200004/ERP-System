@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, App } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -18,13 +18,14 @@ import {
   SecurityScanOutlined,
   ControlOutlined,
 } from '@ant-design/icons';
+import NotificationBell from '../components/NotificationBell';
 import { useAuthStore } from '../store/authStore';
-import { message } from 'antd';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const DashboardLayout: React.FC = () => {
+  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,6 +99,27 @@ const DashboardLayout: React.FC = () => {
         permission: 'VIEW_PAYMENTS' as const,
       },
       {
+        key: '/expenses',
+        icon: <DollarOutlined />,
+        label: 'Expenses',
+        onClick: () => navigate('/expenses'),
+        permission: 'VIEW_EXPENSES' as const,
+      },
+      {
+        key: '/leads',
+        icon: <UserOutlined />,
+        label: 'Leads',
+        onClick: () => navigate('/leads'),
+        permission: 'VIEW_LEADS' as const,
+      },
+      {
+        key: '/proposals',
+        icon: <FileSearchOutlined />,
+        label: 'Proposals',
+        onClick: () => navigate('/proposals'),
+        permission: 'VIEW_PROPOSALS' as const,
+      },
+      {
         key: '/attendance',
         icon: <ClockCircleOutlined />,
         label: 'Attendance',
@@ -109,6 +131,20 @@ const DashboardLayout: React.FC = () => {
         icon: <TrophyOutlined />,
         label: 'My KPI',
         onClick: () => navigate('/kpi'),
+        permission: 'VIEW_KPI' as const,
+      },
+      {
+        key: '/employees',
+        icon: <UserOutlined />,
+        label: 'Employees',
+        onClick: () => navigate('/employees'),
+        permission: 'VIEW_EMPLOYEES' as const,
+      },
+      {
+        key: '/kpi-review',
+        icon: <BarChartOutlined />,
+        label: 'KPI Review',
+        onClick: () => navigate('/kpi-review'),
         permission: 'VIEW_KPI' as const,
       },
       {
@@ -136,7 +172,7 @@ const DashboardLayout: React.FC = () => {
         key: '/feature-control',
         icon: <ControlOutlined />,
         label: 'Feature Control',
-        onClick: () => navigate('/settings'),
+        onClick: () => navigate('/feature-control'),
         permission: 'VIEW_SETTINGS' as const,
       },
     ];
@@ -235,6 +271,7 @@ const DashboardLayout: React.FC = () => {
             >
               Request Custom Features
             </Button>
+            <NotificationBell />
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Avatar size="large" icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
             </Dropdown>

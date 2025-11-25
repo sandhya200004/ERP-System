@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, App } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 const { Title, Text } = Typography;
 
 const LoginPage: React.FC = () => {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

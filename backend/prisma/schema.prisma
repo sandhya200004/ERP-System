@@ -169,6 +169,11 @@ model companies {
   roles                 roles[]
   taxes                 taxes[]
   user_roles            user_roles[]
+  notifications         notifications[]
+  employee_kpi_history  employee_kpi_history[]
+  role_kpi_configs      role_kpi_configs[]
+  task_audit_logs       task_audit_logs[]
+  notification_settings notification_settings[]
 
   @@index([status, deleted_at])
 }
@@ -236,7 +241,7 @@ model customers {
 }
 
 model employee_profiles {
-  id                      String              @id @db.Uuid
+  id                      String              @id @default(uuid()) @db.Uuid
   user_id                 String              @unique @db.Uuid
   employee_id             String              @unique @db.VarChar(50)
   designation             String              @db.VarChar(100)
@@ -245,7 +250,7 @@ model employee_profiles {
   date_of_joining         DateTime            @db.Date
   reporting_to_id         String?             @db.Uuid
   created_at              DateTime            @default(now())
-  updated_at              DateTime
+  updated_at              DateTime            @updatedAt
   employee_profiles       employee_profiles?  @relation("employee_profilesToemployee_profiles", fields: [reporting_to_id], references: [id])
   other_employee_profiles employee_profiles[] @relation("employee_profilesToemployee_profiles")
   users                   users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -256,26 +261,55 @@ model employee_profiles {
 }
 
 model employee_tasks {
-  id           String        @id @db.Uuid
-  user_id      String        @db.Uuid
-  company_id   String        @db.Uuid
-  date         DateTime      @db.Date
-  title        String        @db.VarChar(255)
-  description  String?
-  category     String?       @db.VarChar(100)
-  priority     task_priority @default(medium)
-  status       task_status   @default(pending)
-  hours_spent  Decimal       @default(0) @db.Decimal(5, 2)
-  completed_at DateTime?
-  created_at   DateTime      @default(now())
-  updated_at   DateTime
-  deleted_at   DateTime?
-  companies    companies     @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  users        users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id                   String             @id @db.Uuid
+  user_id              String             @db.Uuid
+  company_id           String             @db.Uuid
+  date                 DateTime           @db.Date
+  title                String             @db.VarChar(255)
+  description          String?
+  category             String?            @db.VarChar(100)
+  priority             task_priority      @default(medium)
+  status               task_status        @default(pending)
+  hours_spent          Decimal            @default(0) @db.Decimal(5, 2)
+  completed_at         DateTime?
+  created_at           DateTime           @default(now())
+  updated_at           DateTime
+  deleted_at           DateTime?
+  assigned_to          String?            @db.Uuid
+  created_by           String?            @db.Uuid
+  estimated_hours      Decimal?           @db.Decimal(5, 2)
+  actual_hours         Decimal?           @db.Decimal(5, 2)
+  started_at           DateTime?
+  submitted_at         DateTime?
+  complexity           task_complexity?   @default(medium)
+  deadline             DateTime?
+  proofs               Json?              @default("[]")
+  auto_checks          Json?              @default("[]")
+  required_checks      Int?               @default(0)
+  peer_reviews         Json?              @default("[]")
+  quality_score        Decimal?           @db.Decimal(5, 2)
+  penalty_pct          Decimal?           @default(0) @db.Decimal(5, 2)
+  task_score           Decimal?           @db.Decimal(5, 2)
+  manager_approved     Boolean?           @default(false)
+  manager_approved_at  DateTime?
+  manager_id           String?            @db.Uuid
+  companies            companies          @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  users                users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  assigned_user        users?             @relation("assigned_tasks", fields: [assigned_to], references: [id])
+  creator              users?             @relation("created_tasks", fields: [created_by], references: [id])
+  manager              users?             @relation("managed_tasks", fields: [manager_id], references: [id])
+  task_proofs          task_proofs[]
 
   @@index([company_id, date])
   @@index([status])
   @@index([user_id, date])
+  @@index([assigned_to])
+  @@index([created_by])
+  @@index([manager_id])
+  @@index([deadline])
+  @@index([complexity])
+  @@index([submitted_at])
+  @@index([task_score])
 }
 
 model fx_rates {
@@ -707,7 +741,7 @@ model user_roles {
 }
 
 model users {
-  id                                                String             @id @db.Uuid
+  id                                                String             @id @default(uuid()) @db.Uuid
   email                                             String             @unique @db.VarChar(255)
   password_hash                                     String             @db.VarChar(255)
   first_name                                        String             @db.VarChar(100)
@@ -720,13 +754,16 @@ model users {
   two_factor_enabled                                Boolean            @default(false)
   two_factor_secret                                 String?            @db.VarChar(255)
   created_at                                        DateTime           @default(now())
-  updated_at                                        DateTime
+  updated_at                                        DateTime           @updatedAt
   deleted_at                                        DateTime?
   api_keys                                          api_keys[]
   attendance                                        attendance[]
   audit_logs                                        audit_logs[]
   employee_profiles                                 employee_profiles?
   employee_tasks                                    employee_tasks[]
+  assigned_tasks                                    employee_tasks[]   @relation("assigned_tasks")
+  created_tasks                                     employee_tasks[]   @relation("created_tasks")
+  managed_tasks                                     employee_tasks[]   @relation("managed_tasks")
   invoices_invoices_created_byTousers               invoices[]         @relation("invoices_created_byTousers")
   invoices_invoices_finalized_byTousers             invoices[]         @relation("invoices_finalized_byTousers")
   journal_entries_journal_entries_created_byTousers journal_entries[]  @relation("journal_entries_created_byTousers")
@@ -735,6 +772,11 @@ model users {
   quotes                                            quotes[]
   refresh_tokens                                    refresh_tokens[]
   user_roles                                        user_roles[]
+  notifications                                     notifications[]
+  task_proofs                                       task_proofs[]
+  employee_kpi_history                              employee_kpi_history[]
+  task_audit_logs                                   task_audit_logs[]
+  notification_settings                             notification_settings?
 
   @@index([email, deleted_at])
   @@index([status])
@@ -828,11 +870,22 @@ enum task_priority {
   high
 }
 
+enum task_complexity {
+  trivial
+  small
+  medium
+  complex
+  critical
+}
+
 enum task_status {
   pending
   in_progress
   completed
   cancelled
+  submitted
+  approved
+  rejected
 }
 
 enum tax_type {
@@ -859,4 +912,123 @@ enum user_status {
   active
   inactive
   suspended
+}
+
+model notifications {
+  id           String    @id @db.Uuid
+  user_id      String    @db.Uuid
+  company_id   String    @db.Uuid
+  title        String    @db.VarChar(255)
+  message      String
+  type         String    @db.VarChar(50)
+  is_read      Boolean   @default(false)
+  read_at      DateTime?
+  action_url   String?   @db.VarChar(500)
+  created_at   DateTime  @default(now())
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  companies    companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([company_id])
+  @@index([created_at])
+}
+
+model task_proofs {
+  id             String         @id @db.Uuid
+  task_id        String         @db.Uuid
+  file_name      String         @db.VarChar(255)
+  file_path      String         @db.VarChar(500)
+  file_size      BigInt
+  mime_type      String         @db.VarChar(100)
+  uploaded_by    String         @db.Uuid
+  uploaded_at    DateTime       @default(now())
+  task           employee_tasks @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  uploader       users          @relation(fields: [uploaded_by], references: [id])
+
+  @@index([task_id])
+  @@index([uploaded_by])
+}
+
+model employee_kpi_history {
+  id                    String    @id @db.Uuid
+  employee_id           String    @db.Uuid
+  company_id            String    @db.Uuid
+  period_start          DateTime  @db.Date
+  period_end            DateTime  @db.Date
+  total_tasks           Int       @default(0)
+  completed_tasks       Int       @default(0)
+  avg_task_score        Decimal?  @db.Decimal(5, 2)
+  normalized_score      Decimal?  @db.Decimal(5, 2)
+  percentile            Decimal?  @db.Decimal(5, 2)
+  role_mean             Decimal?  @db.Decimal(5, 2)
+  role_stddev           Decimal?  @db.Decimal(5, 2)
+  timeliness_score      Decimal?  @db.Decimal(5, 2)
+  quality_score         Decimal?  @db.Decimal(5, 2)
+  effort_accuracy_score Decimal?  @db.Decimal(5, 2)
+  peer_score            Decimal?  @db.Decimal(5, 2)
+  gaming_penalty_total  Decimal?  @db.Decimal(5, 2)
+  remarks               String?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now())
+  employee              users     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  company               companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([employee_id, period_end])
+  @@index([company_id, period_end])
+  @@index([period_start, period_end])
+}
+
+model role_kpi_configs {
+  id                       String    @id @db.Uuid
+  company_id               String    @db.Uuid
+  role                     String    @db.VarChar(50)
+  timeliness_weight        Decimal   @default(0.30) @db.Decimal(3, 2)
+  quality_weight           Decimal   @default(0.30) @db.Decimal(3, 2)
+  effort_accuracy_weight   Decimal   @default(0.25) @db.Decimal(3, 2)
+  peer_review_weight       Decimal   @default(0.15) @db.Decimal(3, 2)
+  normalization_enabled    Boolean   @default(true)
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @default(now())
+  company                  companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@unique([company_id, role])
+  @@index([company_id])
+}
+
+model task_audit_logs {
+  id           String    @id @db.Uuid
+  task_id      String    @db.Uuid
+  company_id   String    @db.Uuid
+  user_id      String    @db.Uuid
+  action       String    @db.VarChar(100)
+  field_name   String?   @db.VarChar(100)
+  old_value    String?
+  new_value    String?
+  timestamp    DateTime  @default(now())
+  ip_address   String?   @db.VarChar(45)
+  user         users     @relation(fields: [user_id], references: [id])
+  company      companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([task_id, timestamp])
+  @@index([company_id])
+  @@index([user_id])
+}
+
+model notification_settings {
+  id                    String    @id @db.Uuid
+  user_id               String    @unique @db.Uuid
+  company_id            String    @db.Uuid
+  email_enabled         Boolean   @default(true)
+  push_enabled          Boolean   @default(true)
+  task_assigned         Boolean   @default(true)
+  task_deadline         Boolean   @default(true)
+  task_approved         Boolean   @default(true)
+  task_rejected         Boolean   @default(true)
+  kpi_monthly_report    Boolean   @default(true)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now())
+  user                  users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  company               companies @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([company_id])
 }

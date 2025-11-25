@@ -9,7 +9,7 @@ import {
   Select,
   Modal,
   Form,
-  message,
+  App,
   Drawer,
   Tabs,
   Row,
@@ -53,6 +53,8 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
 import dayjs from 'dayjs';
+import InvoiceBuilder from '../components/InvoiceBuilder';
+import { invoiceService } from '../services/invoice.service';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -103,6 +105,7 @@ interface RecurringConfig {
 }
 
 const EnhancedInvoicesPage: React.FC = () => {
+  const { message } = App.useApp();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -117,6 +120,7 @@ const EnhancedInvoicesPage: React.FC = () => {
   const [isReminderModalVisible, setIsReminderModalVisible] = useState(false);
   const [isRecurringModalVisible, setIsRecurringModalVisible] = useState(false);
   const [isPaymentLinkModalVisible, setIsPaymentLinkModalVisible] = useState(false);
+  const [builderVisible, setBuilderVisible] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -138,162 +142,82 @@ const EnhancedInvoicesPage: React.FC = () => {
 
   const fetchInvoices = async () => {
     setLoading(true);
-    // Simulated data - replace with actual API call
-    setTimeout(() => {
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          invoiceNumber: 'INV-2025-001',
-          customer: {
-            id: '1',
-            name: 'Rajesh Kumar',
-            email: 'rajesh.kumar@techcorp.in',
-            company: 'Tech Corp India Pvt Ltd',
-          },
-          issueDate: '2025-11-01',
-          dueDate: '2025-12-01',
-          amount: 100000,
-          tax: 18000,
-          total: 118000,
-          status: 'Sent',
-          paymentStatus: 'Unpaid',
-          paidAmount: 0,
-          items: [
-            { id: '1', description: 'Web Development Services', quantity: 1, rate: 100000, amount: 100000 },
-          ],
-          notes: 'Thank you for your business!',
-          terms: 'Payment due within 30 days',
-          remindersSent: 1,
-          lastReminderDate: '2025-11-05',
-          createdAt: '2025-11-01',
-          updatedAt: '2025-11-05',
+    try {
+      const response = await invoiceService.getAll({});
+      console.log('Fetched invoices:', response);
+      
+      // Map the API response to match the interface
+      const mappedInvoices: Invoice[] = (response.data || []).map((invoice: any) => ({
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        customer: {
+          id: invoice.customer_id,
+          name: invoice.customers?.name || 'Unknown',
+          email: invoice.customers?.email || '',
+          company: invoice.customers?.company || '',
         },
-        {
-          id: '2',
-          invoiceNumber: 'INV-2025-002',
-          customer: {
-            id: '2',
-            name: 'Priya Sharma',
-            email: 'priya.sharma@innovate.com',
-            company: 'Innovate Solutions',
-          },
-          issueDate: '2025-10-15',
-          dueDate: '2025-11-15',
-          amount: 75000,
-          tax: 13500,
-          total: 88500,
-          status: 'Paid',
-          paymentStatus: 'Paid',
-          paidAmount: 88500,
-          items: [
-            { id: '1', description: 'Digital Marketing Campaign', quantity: 1, rate: 75000, amount: 75000 },
-          ],
-          notes: 'Paid via UPI on Nov 5, 2025',
-          terms: 'Payment due within 30 days',
-          remindersSent: 0,
-          createdAt: '2025-10-15',
-          updatedAt: '2025-11-05',
-        },
-        {
-          id: '3',
-          invoiceNumber: 'INV-2025-003',
-          customer: {
-            id: '3',
-            name: 'Amit Patel',
-            email: 'amit.patel@startupindia.in',
-            company: 'Startup India',
-          },
-          issueDate: '2025-09-20',
-          dueDate: '2025-10-20',
-          amount: 50000,
-          tax: 9000,
-          total: 59000,
-          status: 'Overdue',
-          paymentStatus: 'Partial',
-          paidAmount: 30000,
-          items: [
-            { id: '1', description: 'Mobile App Development', quantity: 1, rate: 50000, amount: 50000 },
-          ],
-          notes: 'Partial payment received',
-          terms: 'Payment due within 30 days',
-          remindersSent: 3,
-          lastReminderDate: '2025-11-01',
-          createdAt: '2025-09-20',
-          updatedAt: '2025-11-01',
-        },
-        {
-          id: '4',
-          invoiceNumber: 'INV-2025-004',
-          customer: {
-            id: '4',
-            name: 'Sneha Reddy',
-            email: 'sneha.reddy@globalenterprises.in',
-            company: 'Global Enterprises',
-          },
-          issueDate: '2025-11-05',
-          dueDate: '2025-12-05',
-          amount: 150000,
-          tax: 27000,
-          total: 177000,
-          status: 'Viewed',
-          paymentStatus: 'Unpaid',
-          paidAmount: 0,
-          items: [
-            { id: '1', description: 'Enterprise Software License', quantity: 1, rate: 150000, amount: 150000 },
-          ],
-          terms: 'Payment due within 30 days',
-          remindersSent: 0,
-          recurring: {
-            enabled: true,
-            frequency: 'Monthly',
-            startDate: '2025-11-05',
-            nextInvoiceDate: '2025-12-05',
-          },
-          createdAt: '2025-11-05',
-          updatedAt: '2025-11-06',
-        },
-        {
-          id: '5',
-          invoiceNumber: 'INV-2025-005',
-          customer: {
-            id: '5',
-            name: 'Vikram Singh',
-            email: 'vikram.singh@oldcompany.com',
-            company: 'Old Company Ltd',
-          },
-          issueDate: '2025-11-07',
-          dueDate: '2025-12-07',
-          amount: 25000,
-          tax: 4500,
-          total: 29500,
-          status: 'Draft',
-          paymentStatus: 'Unpaid',
-          paidAmount: 0,
-          items: [
-            { id: '1', description: 'Consulting Services', quantity: 2, rate: 12500, amount: 25000 },
-          ],
-          terms: 'Payment due within 30 days',
-          remindersSent: 0,
-          createdAt: '2025-11-07',
-          updatedAt: '2025-11-07',
-        },
-      ];
-      setInvoices(mockInvoices);
+        issueDate: invoice.invoice_date,
+        dueDate: invoice.due_date,
+        amount: parseFloat(invoice.subtotal) || 0,
+        tax: parseFloat(invoice.tax_total) || 0,
+        total: parseFloat(invoice.total) || 0,
+        status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) as any,
+        paymentStatus: parseFloat(invoice.amount_paid) === 0 
+          ? 'Unpaid' 
+          : parseFloat(invoice.amount_paid) >= parseFloat(invoice.total)
+          ? 'Paid'
+          : 'Partial' as any,
+        paidAmount: parseFloat(invoice.amount_paid) || 0,
+        items: (invoice.invoice_lines || []).map((line: any) => ({
+          id: line.id,
+          description: line.description,
+          quantity: line.quantity,
+          rate: parseFloat(line.unit_price),
+          amount: parseFloat(line.total),
+        })),
+        notes: invoice.notes || '',
+        terms: invoice.terms || '',
+        remindersSent: 0,
+        lastReminderDate: undefined,
+        createdAt: invoice.created_at,
+        updatedAt: invoice.updated_at,
+      }));
+      
+      setInvoices(mappedInvoices);
+      fetchStats();
+    } catch (error) {
+      console.error('Failed to fetch invoices:', error);
+      message.error('Failed to fetch invoices');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const fetchStats = () => {
+    const draftCount = invoices.filter(inv => inv.status === 'Draft').length;
+    const sentCount = invoices.filter(inv => inv.status === 'Sent').length;
+    const paidCount = invoices.filter(inv => inv.paymentStatus === 'Paid').length;
+    const overdueCount = invoices.filter(inv => 
+      inv.status === 'Overdue' || (inv.status !== 'Paid' && new Date(inv.dueDate) < new Date())
+    ).length;
+    
+    const totalAmt = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const paidAmt = invoices.reduce((sum, inv) => sum + inv.paidAmount, 0);
+    const unpaidAmt = totalAmt - paidAmt;
+    const overdueAmt = invoices
+      .filter(inv => inv.status === 'Overdue' || (inv.status !== 'Paid' && new Date(inv.dueDate) < new Date()))
+      .reduce((sum, inv) => sum + (inv.total - inv.paidAmount), 0);
+    
     setStats({
-      totalInvoices: 5,
-      draftInvoices: 1,
-      sentInvoices: 1,
-      paidInvoices: 1,
-      overdueInvoices: 1,
-      totalAmount: 518000,
-      paidAmount: 118500,
-      unpaidAmount: 370500,
-      overdueAmount: 29000,
+      totalInvoices: invoices.length,
+      draftInvoices: draftCount,
+      sentInvoices: sentCount,
+      paidInvoices: paidCount,
+      overdueInvoices: overdueCount,
+      totalAmount: totalAmt,
+      paidAmount: paidAmt,
+      unpaidAmount: unpaidAmt,
+      overdueAmount: overdueAmt,
     });
   };
 
@@ -604,7 +528,7 @@ const EnhancedInvoicesPage: React.FC = () => {
               type="link"
               size="small"
               icon={<EditOutlined />}
-              onClick={() => message.info('Opening invoice builder...')}
+              onClick={() => setBuilderVisible(true)}
             />
           </Tooltip>
           <Dropdown menu={{ items: moreActionsMenu(record) }} trigger={['click']}>
@@ -694,7 +618,7 @@ const EnhancedInvoicesPage: React.FC = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => message.info('Opening invoice builder...')}
+                onClick={() => setBuilderVisible(true)}
                 style={{
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   border: 'none',
@@ -986,47 +910,67 @@ const EnhancedInvoicesPage: React.FC = () => {
 
             {/* Activity Timeline */}
             <Card title="Activity Timeline">
-              <Timeline>
-                <Timeline.Item color="green">
-                  <Text strong>Invoice Created</Text>
-                  <br />
-                  <Text type="secondary">
-                    {dayjs(selectedInvoice.createdAt).format('MMM DD, YYYY HH:mm')}
-                  </Text>
-                </Timeline.Item>
-                {selectedInvoice.status !== 'Draft' && (
-                  <Timeline.Item color="blue">
-                    <Text strong>Invoice Sent</Text>
-                    <br />
-                    <Text type="secondary">Sent to {selectedInvoice.customer.email}</Text>
-                  </Timeline.Item>
-                )}
-                {selectedInvoice.status === 'Viewed' && (
-                  <Timeline.Item color="purple">
-                    <Text strong>Invoice Viewed</Text>
-                    <br />
-                    <Text type="secondary">Customer opened the invoice</Text>
-                  </Timeline.Item>
-                )}
-                {selectedInvoice.remindersSent > 0 && (
-                  <Timeline.Item color="orange">
-                    <Text strong>Payment Reminder Sent</Text>
-                    <br />
-                    <Text type="secondary">
-                      {dayjs(selectedInvoice.lastReminderDate).format('MMM DD, YYYY')}
-                    </Text>
-                  </Timeline.Item>
-                )}
-                {selectedInvoice.paymentStatus === 'Paid' && (
-                  <Timeline.Item color="green" dot={<CheckCircleOutlined />}>
-                    <Text strong>Payment Received</Text>
-                    <br />
-                    <Text type="secondary">
-                      ₹{selectedInvoice.paidAmount.toLocaleString('en-IN')} paid
-                    </Text>
-                  </Timeline.Item>
-                )}
-              </Timeline>
+              <Timeline
+                items={[
+                  {
+                    color: 'green',
+                    children: (
+                      <>
+                        <Text strong>Invoice Created</Text>
+                        <br />
+                        <Text type="secondary">
+                          {dayjs(selectedInvoice.createdAt).format('MMM DD, YYYY HH:mm')}
+                        </Text>
+                      </>
+                    )
+                  },
+                  ...(selectedInvoice.status !== 'Draft' ? [{
+                    color: 'blue' as const,
+                    children: (
+                      <>
+                        <Text strong>Invoice Sent</Text>
+                        <br />
+                        <Text type="secondary">Sent to {selectedInvoice.customer.email}</Text>
+                      </>
+                    )
+                  }] : []),
+                  ...(selectedInvoice.status === 'Viewed' ? [{
+                    color: 'purple' as const,
+                    children: (
+                      <>
+                        <Text strong>Invoice Viewed</Text>
+                        <br />
+                        <Text type="secondary">Customer opened the invoice</Text>
+                      </>
+                    )
+                  }] : []),
+                  ...(selectedInvoice.remindersSent > 0 ? [{
+                    color: 'orange' as const,
+                    children: (
+                      <>
+                        <Text strong>Payment Reminder Sent</Text>
+                        <br />
+                        <Text type="secondary">
+                          {dayjs(selectedInvoice.lastReminderDate).format('MMM DD, YYYY')}
+                        </Text>
+                      </>
+                    )
+                  }] : []),
+                  ...(selectedInvoice.paymentStatus === 'Paid' ? [{
+                    color: 'green' as const,
+                    dot: <CheckCircleOutlined />,
+                    children: (
+                      <>
+                        <Text strong>Payment Received</Text>
+                        <br />
+                        <Text type="secondary">
+                          ₹{selectedInvoice.paidAmount.toLocaleString('en-IN')} paid
+                        </Text>
+                      </>
+                    )
+                  }] : [])
+                ]}
+              />
             </Card>
           </>
         )}
@@ -1112,6 +1056,13 @@ const EnhancedInvoicesPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Invoice Builder */}
+      <InvoiceBuilder
+        visible={builderVisible}
+        onClose={() => setBuilderVisible(false)}
+        onSuccess={fetchInvoices}
+      />
     </div>
   );
 };

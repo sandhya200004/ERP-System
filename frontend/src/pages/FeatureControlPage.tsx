@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Switch, Spin, message, Select, Typography, Space, Divider, Tag } from 'antd';
+import { Card, Switch, Spin, Select, Typography, Space, Divider, Tag, App } from 'antd';
 import { ControlOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import apiClient from '../services/api';
 
@@ -36,6 +36,7 @@ interface RoleWithFeatures {
 }
 
 export default function FeatureControlPage() {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [allFeatures, setAllFeatures] = useState<FeatureDefinition[]>([]);

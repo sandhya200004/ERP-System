@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Typography, Table, Tag, Progress, Spin } from 'antd';
 import { 
   FileTextOutlined, 
@@ -158,7 +158,7 @@ const DashboardPage: React.FC = () => {
       {/* Top Stats Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+          <Card variant="borderless" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
             <Statistic
               title={<span style={{ color: '#fff' }}>Invoices This Month</span>}
               value={stats.totalRevenue}
@@ -175,7 +175,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+          <Card variant="borderless" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
             <Statistic
               title={<span style={{ color: '#fff' }}>Quotes For Customers</span>}
               value={0}
@@ -192,7 +192,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+          <Card variant="borderless" style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
             <Statistic
               title={<span style={{ color: '#fff' }}>Quotes For Leads</span>}
               value={0}
@@ -209,7 +209,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }}>
+          <Card variant="borderless" style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }}>
             <Statistic
               title={<span style={{ color: '#fff' }}>Unpaid</span>}
               value={stats.unpaidAmount}
@@ -229,7 +229,7 @@ const DashboardPage: React.FC = () => {
       {/* Status Breakdown Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} md={6}>
-          <Card title="Invoices" bordered={false}>
+          <Card title="Invoices" variant="borderless">
             <div style={{ marginBottom: '12px' }}>
               <Text>Draft</Text>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -276,7 +276,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} md={6}>
-          <Card title="Quotes For Customers" bordered={false}>
+          <Card title="Quotes For Customers" variant="borderless">
             <div style={{ marginBottom: '12px' }}>
               <Text>Draft</Text>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -323,7 +323,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} md={6}>
-          <Card title="Quotes For Leads" bordered={false}>
+          <Card title="Quotes For Leads" variant="borderless">
             <div style={{ marginBottom: '12px' }}>
               <Text>Draft</Text>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -370,7 +370,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} md={6}>
-          <Card title="Customers" bordered={false}>
+          <Card title="Customers" variant="borderless">
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Progress 
                 type="circle" 
@@ -395,8 +395,8 @@ const DashboardPage: React.FC = () => {
 
       {/* Recent Activity Row */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={12}>
-          <Card title="Recent Invoices" bordered={false}>
+        <Col xs={24} md={12}>
+          <Card title="Recent Invoices" variant="borderless">
             <Table 
               dataSource={stats.recentInvoices}
               columns={invoiceColumns}
@@ -407,8 +407,8 @@ const DashboardPage: React.FC = () => {
           </Card>
         </Col>
 
-        <Col xs={24} lg={12}>
-          <Card title="Recent Quotes" bordered={false}>
+        <Col xs={24} md={12}>
+          <Card title="Recent Quotes" variant="borderless">
             <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
               No quotes available
             </div>

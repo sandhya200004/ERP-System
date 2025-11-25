@@ -260,8 +260,9 @@ const EnhancedDashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <Spin size="large" tip="Loading dashboard..." />
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh', gap: '16px' }}>
+        <Spin size="large" />
+        <div>Loading dashboard...</div>
       </div>
     );
   }
@@ -405,7 +406,7 @@ const EnhancedDashboardPage: React.FC = () => {
                 </Space>
               </div>
             }
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={300}>
@@ -450,7 +451,7 @@ const EnhancedDashboardPage: React.FC = () => {
         <Col xs={24} lg={8}>
           <Card
             title="Sales Pipeline"
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={300}>
@@ -492,7 +493,7 @@ const EnhancedDashboardPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card
             title="Customer Growth"
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={250}>
@@ -517,7 +518,7 @@ const EnhancedDashboardPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card
             title="Top Products/Services"
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={250}>
@@ -544,7 +545,7 @@ const EnhancedDashboardPage: React.FC = () => {
                 <Badge count={recentActivities.length} />
               </Space>
             }
-            bordered={false}
+            variant="borderless"
             extra={<Button type="link" size="small">View All</Button>}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
@@ -588,17 +589,15 @@ const EnhancedDashboardPage: React.FC = () => {
                 <Badge count={upcomingTasks.length} />
               </Space>
             }
-            bordered={false}
+            variant="borderless"
             extra={<Button type="link" size="small">Add Task</Button>}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
-            <Timeline>
-              {upcomingTasks.map(task => (
-                <Timeline.Item
-                  key={task.id}
-                  dot={<ClockCircleOutlined style={{ fontSize: 16 }} />}
-                  color={task.priority === 'high' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue'}
-                >
+            <Timeline
+              items={upcomingTasks.map(task => ({
+                dot: <ClockCircleOutlined style={{ fontSize: 16}} />,
+                color: task.priority === 'high' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue',
+                children: (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <Text strong>{task.title}</Text>
@@ -609,9 +608,9 @@ const EnhancedDashboardPage: React.FC = () => {
                     </div>
                     <Tag color={getPriorityColor(task.priority)}>{task.priority.toUpperCase()}</Tag>
                   </div>
-                </Timeline.Item>
-              ))}
-            </Timeline>
+                )
+              }))}
+            />
           </Card>
         </Col>
       </Row>
@@ -621,7 +620,7 @@ const EnhancedDashboardPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card
             title="Invoice Status Overview"
-            bordered={false}
+            variant="borderless"
             extra={<Button type="link" size="small" icon={<EyeOutlined />}>View All</Button>}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
@@ -649,7 +648,7 @@ const EnhancedDashboardPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card
             title="Recent Invoices"
-            bordered={false}
+            variant="borderless"
             extra={<Button type="link" size="small" icon={<EyeOutlined />}>View All</Button>}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >

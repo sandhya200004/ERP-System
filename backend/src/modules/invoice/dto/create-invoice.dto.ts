@@ -3,15 +3,15 @@ import { IsNotEmpty, IsOptional, IsString, IsNumber, Min, IsArray, ValidateNeste
 import { Type } from 'class-transformer';
 
 export class InvoiceLineDto {
-  @ApiProperty({ description: 'Item ID' })
-  @IsNotEmpty()
-  @IsString()
-  itemId: string;
-
-  @ApiPropertyOptional({ description: 'Line description (overrides item description)' })
+  @ApiPropertyOptional({ description: 'Item ID (optional if custom description)' })
   @IsOptional()
   @IsString()
-  description?: string;
+  itemId?: string;
+
+  @ApiProperty({ description: 'Line description' })
+  @IsNotEmpty()
+  @IsString()
+  description: string;
 
   @ApiProperty({ description: 'Quantity' })
   @IsNumber()

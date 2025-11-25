@@ -18,37 +18,49 @@ export class InvoiceService {
   async create(company_id: string, user_id: string, createInvoiceDto: CreateInvoiceDto) {
     const { lines, currencyCode = 'USD', ...invoiceData } = createInvoiceDto;
 
-    // Get the next invoice number
-    const lastInvoice = await this.prisma.invoices.findFirst({
-      where: { company_id },
-      orderBy: { invoice_number: 'desc' },
-    });
+    // Parallel execution of independent operations
+    const [lastInvoice, fxRate] = await Promise.all([
+      this.prisma.invoices.findFirst({
+        where: { company_id },
+        orderBy: { invoice_number: 'desc' },
+        select: { invoice_number: true }, // Only select what we need
+      }),
+      currencyCode === 'USD'
+        ? Promise.resolve(1)
+        : this.currencyService.getFxRate(currencyCode, new Date(createInvoiceDto.invoiceDate))
+            .then(result => result.rate)
+            .catch(() => 1), // Fallback to 1 if FX rate fails
+    ]);
 
     const nextNumber = lastInvoice
       ? parseInt(lastInvoice.invoice_number.replace(/\D/g, '')) + 1
       : 1;
     const invoiceNumber = `INV-${nextNumber.toString().padStart(5, '0')}`;
 
-    // Get FX rate for the invoice date
-    const invoiceDate = new Date(createInvoiceDto.invoiceDate);
-    const fxRate = currencyCode === 'USD' 
-      ? 1 
-      : (await this.currencyService.getFxRate(currencyCode, invoiceDate)).rate;
-
-    // Calculate totals
+    // Calculate totals with parallel tax calculations
     let subtotal = 0;
     const processedLines = [];
 
-    for (const line of lines) {
+    // Batch tax calculations for all lines in parallel
+    const taxCalculations = await Promise.all(
+      lines.map(line => 
+        line.taxIds?.length
+          ? this.taxService.calculateMultipleTaxes(
+              company_id, 
+              line.quantity * line.unitPrice * (1 - (line.discount || 0) / 100), 
+              line.taxIds
+            )
+          : Promise.resolve([])
+      )
+    );
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const lineSubtotal = line.quantity * line.unitPrice;
       const lineDiscount = lineSubtotal * ((line.discount || 0) / 100);
       const lineAmount = lineSubtotal - lineDiscount;
 
-      // Calculate taxes for this line
-      const lineTaxes = line.taxIds?.length
-        ? await this.taxService.calculateMultipleTaxes(company_id, lineAmount, line.taxIds)
-        : [];
-
+      const lineTaxes = taxCalculations[i];
       const lineTaxTotal = lineTaxes.reduce((sum, tax) => sum + tax.amount, 0);
 
       processedLines.push({
@@ -122,25 +134,47 @@ export class InvoiceService {
         },
       },
       include: {
-        customers: true,
+        customers: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
         invoice_lines: {
-          include: { items: true,
-            invoice_line_taxes: {
-              include: { taxes: true },
+          select: {
+            id: true,
+            line_number: true,
+            description: true,
+            quantity: true,
+            unit_price: true,
+            discount_percent: true,
+            discount_amount: true,
+            subtotal: true,
+            tax_amount: true,
+            total: true,
+            items: {
+              select: {
+                id: true,
+                name: true,
+                item_number: true,
+              },
             },
           },
         },
       },
     });
 
-    await this.audit.log({
+    // Non-blocking audit log
+    this.audit.log({
       companyId: company_id,
       userId: user_id,
       action: 'create' as any,
       entity_type: 'invoice',
       entityId: invoice.id,
-      newValues: invoice,
-    });
+      newValues: { id: invoice.id, invoice_number: invoice.invoice_number, total: invoice.total },
+    }).catch(err => console.error('Audit log failed:', err));
 
     return invoice;
   }

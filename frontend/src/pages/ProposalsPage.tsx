@@ -28,6 +28,7 @@ import {
 import dayjs from 'dayjs';
 import { customerService } from '../services/customer.service';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -244,25 +245,49 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
 
   const handleDownloadPDF = async () => {
     const proposalElement = document.getElementById('proposal-preview');
-    if (!proposalElement) return;
+    if (!proposalElement) {
+      message.error('Proposal preview not found');
+      return;
+    }
 
     try {
+      message.loading('Generating PDF...', 0);
+      
       const canvas = await html2canvas(proposalElement, {
+        scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: '#ffffff',
       } as any);
 
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      const { jsPDF } = (window as any);
       const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`proposal-${proposalData?.proposalNumber || 'draft'}.pdf`);
+      
+      // Handle multi-page proposals
+      const pageHeight = 297;
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      message.destroy();
+      pdf.save(`proposal-${proposalData?.proposalNumber || 'draft'}-${dayjs().format('YYYYMMDD')}.pdf`);
       message.success('PDF downloaded successfully!');
-    } catch (error) {
-      message.error('Failed to generate PDF');
+    } catch (error: any) {
+      message.destroy();
+      console.error('PDF generation error:', error);
+      message.error(error.message || 'Failed to generate PDF');
     }
   };
 

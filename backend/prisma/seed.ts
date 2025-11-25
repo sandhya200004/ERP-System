@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -175,21 +176,29 @@ async function main() {
 
   console.log('All permissions assigned to admin role');
 
-  // Assign admin role to user  
-  await prisma.user_roles.upsert({
+  // Assign admin role to user
+  const existingUserRole = await prisma.user_roles.findFirst({
     where: {
-      id: '00000000-0000-0000-0000-000000000004',
-    },
-    update: {},
-    create: {
-      id: '00000000-0000-0000-0000-000000000004',
       user_id: adminUser.id,
-      company_id: company.id,
       role_id: adminRole.id,
+      company_id: company.id,
     },
   });
 
-  console.log('Admin role assigned to user');
+  if (!existingUserRole) {
+    await prisma.user_roles.create({
+      data: {
+        id: randomUUID(),
+        user_id: adminUser.id,
+        company_id: company.id,
+        role_id: adminRole.id,
+      },
+    });
+    console.log('Admin role assigned to user');
+  } else {
+    console.log('Admin role already assigned to user');
+  }
+
   console.log('\n✅ Seed completed successfully!');
   console.log('\nLogin credentials:');
   console.log('Email: veerajmatnale@triverse.com');

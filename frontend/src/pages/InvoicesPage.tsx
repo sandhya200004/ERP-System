@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Typography, Card, message, Tag } from 'antd';
-import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Typography, Card, Tag, App } from 'antd';
+import { PlusOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import { invoiceService } from '../services/invoice.service';
 import InvoiceBuilder from '../components/InvoiceBuilder';
 
@@ -21,6 +21,7 @@ interface Invoice {
 }
 
 const InvoicesPage: React.FC = () => {
+  const { message } = App.useApp();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [builderVisible, setBuilderVisible] = useState(false);
@@ -33,8 +34,26 @@ const InvoicesPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await invoiceService.getAll({});
-      setInvoices(response.data);
+      console.log('Fetched invoices:', response);
+      
+      // Map the API response to match the interface
+      const mappedInvoices = (response.data || []).map((invoice: any) => ({
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        status: invoice.status,
+        totalAmount: parseFloat(invoice.total) || 0,
+        amountPaid: parseFloat(invoice.amount_paid) || 0,
+        amountDue: parseFloat(invoice.amount_due) || 0,
+        invoiceDate: invoice.invoice_date,
+        dueDate: invoice.due_date,
+        customer: {
+          name: invoice.customers?.name || 'Unknown',
+        },
+      }));
+      
+      setInvoices(mappedInvoices);
     } catch (error: any) {
+      console.error('Failed to fetch invoices:', error);
       message.error('Failed to fetch invoices');
     } finally {
       setLoading(false);
@@ -121,9 +140,14 @@ const InvoicesPage: React.FC = () => {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Title level={2}>Invoices</Title>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setBuilderVisible(true)}>
-            Create Invoice
-          </Button>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={fetchInvoices} loading={loading}>
+              Refresh
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setBuilderVisible(true)}>
+              Create Invoice
+            </Button>
+          </Space>
         </div>
 
         <Table

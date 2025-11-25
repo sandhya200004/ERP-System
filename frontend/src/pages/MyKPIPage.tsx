@@ -11,7 +11,7 @@ import {
   DatePicker,
   Select,
   Modal,
-  message,
+  App,
   Progress,
   Statistic,
   Tag,
@@ -28,10 +28,15 @@ import {
   CheckOutlined,
   EditOutlined,
   DeleteOutlined,
+  SendOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAuthStore } from '../store/authStore';
 import { hasPermission } from '../utils/permissions';
+import { employeeTaskService } from '../services/employee-task.service';
+import TaskSubmitModal, { SubmitTaskData } from '../components/TaskSubmitModal';
+import TaskApprovalModal, { ApprovalData } from '../components/TaskApprovalModal';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -41,7 +46,7 @@ interface DailyTask {
   date: string;
   title: string;
   description: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: 'pending' | 'in-progress' | 'completed' | 'submitted' | 'rejected';
   priority: 'low' | 'medium' | 'high';
   hoursSpent: number;
   category: string;
@@ -49,6 +54,20 @@ interface DailyTask {
   employeeName: string;
   createdAt: string;
   completedAt?: string;
+  // KPI Scoring fields
+  estimatedHours?: number;
+  actualHours?: number;
+  startedAt?: string;
+  complexity?: 'trivial' | 'small' | 'medium' | 'complex' | 'critical';
+  proofs?: any[];
+  autoChecks?: any;
+  requiredChecks?: number;
+  peerReviews?: any[];
+  qualityScore?: number;
+  penaltyPct?: number;
+  taskScore?: number;
+  managerApproved?: boolean;
+  managerApprovedAt?: string;
 }
 
 interface EmployeeKPI {
@@ -64,6 +83,7 @@ interface EmployeeKPI {
 }
 
 const MyKPIPage: React.FC = () => {
+  const { message } = App.useApp();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [taskModalVisible, setTaskModalVisible] = useState(false);
@@ -79,6 +99,12 @@ const MyKPIPage: React.FC = () => {
   const [teamTasks, setTeamTasks] = useState<DailyTask[]>([]);
   const [teamKPIs, setTeamKPIs] = useState<EmployeeKPI[]>([]);
 
+  // New modal states for submit/approve
+  const [submitModalVisible, setSubmitModalVisible] = useState(false);
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
+  const [taskForSubmit, setTaskForSubmit] = useState<DailyTask | null>(null);
+  const [taskForApproval, setTaskForApproval] = useState<DailyTask | null>(null);
+
   const canViewAllKPI = hasPermission(user?.role as any, 'VIEW_ALL_KPI');
 
   useEffect(() => {
@@ -93,56 +119,29 @@ const MyKPIPage: React.FC = () => {
   const fetchMyTasks = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await taskService.getMyTasks();
+      const tasks = await employeeTaskService.getMyTasks();
       
-      // Mock data for now
-      const mockTasks: DailyTask[] = [
-        {
-          id: '1',
-          date: dayjs().format('YYYY-MM-DD'),
-          title: 'Complete React component',
-          description: 'Implement user dashboard with charts',
-          status: 'completed',
-          priority: 'high',
-          hoursSpent: 4,
-          category: 'Development',
-          employeeId: user?.id || '',
-          employeeName: `${user?.firstName} ${user?.lastName}`,
-          createdAt: dayjs().subtract(1, 'day').toISOString(),
-          completedAt: dayjs().toISOString(),
-        },
-        {
-          id: '2',
-          date: dayjs().format('YYYY-MM-DD'),
-          title: 'Team meeting',
-          description: 'Sprint planning and retrospective',
-          status: 'completed',
-          priority: 'medium',
-          hoursSpent: 2,
-          category: 'Meeting',
-          employeeId: user?.id || '',
-          employeeName: `${user?.firstName} ${user?.lastName}`,
-          createdAt: dayjs().toISOString(),
-          completedAt: dayjs().toISOString(),
-        },
-        {
-          id: '3',
-          date: dayjs().format('YYYY-MM-DD'),
-          title: 'Code review',
-          description: 'Review pull requests from team members',
-          status: 'in-progress',
-          priority: 'high',
-          hoursSpent: 1.5,
-          category: 'Development',
-          employeeId: user?.id || '',
-          employeeName: `${user?.firstName} ${user?.lastName}`,
-          createdAt: dayjs().toISOString(),
-        },
-      ];
-      setMyTasks(mockTasks);
+      // Map API response to component interface
+      const mappedTasks: DailyTask[] = tasks.map(task => ({
+        id: task.id,
+        date: task.date,
+        title: task.title,
+        description: task.description || '',
+        status: (task.status === 'in_progress' ? 'in-progress' : task.status === 'cancelled' ? 'rejected' : task.status) as DailyTask['status'],
+        priority: task.priority,
+        hoursSpent: task.hoursSpent,
+        category: task.category || 'Other',
+        employeeId: task.userId,
+        employeeName: task.user ? `${task.user.firstName} ${task.user.lastName}` : 'Unknown',
+        createdAt: new Date().toISOString(),
+        completedAt: task.completedAt,
+      }));
+      
+      setMyTasks(mappedTasks);
     } catch (error) {
+      console.error('Failed to fetch tasks:', error);
       message.error('Failed to fetch tasks');
+      setMyTasks([]);
     } finally {
       setLoading(false);
     }
@@ -150,39 +149,76 @@ const MyKPIPage: React.FC = () => {
 
   const fetchMyKPI = async () => {
     try {
-      // TODO: Replace with actual API call
-      const mockKPI: EmployeeKPI = {
+      const kpiData = await employeeTaskService.getMyKPI();
+      
+      const mappedKPI: EmployeeKPI = {
         employeeId: user?.id || '',
         employeeName: `${user?.firstName} ${user?.lastName}`,
         designation: user?.designation || 'Employee',
         department: user?.department || 'General',
-        tasksCompleted: 45,
-        totalTasks: 52,
-        productivityScore: 87,
-        averageTaskTime: 3.5,
-        onTimeCompletion: 92,
+        tasksCompleted: kpiData.completedTasks,
+        totalTasks: kpiData.totalTasks,
+        productivityScore: Math.round(kpiData.completionRate),
+        averageTaskTime: kpiData.averageHoursPerTask,
+        onTimeCompletion: Math.round(kpiData.completionRate),
       };
-      setMyKPI(mockKPI);
+      setMyKPI(mappedKPI);
     } catch (error) {
+      console.error('Failed to fetch KPI data:', error);
       message.error('Failed to fetch KPI data');
     }
   };
 
   const fetchTeamTasks = async () => {
     try {
-      // TODO: API call to fetch all team tasks
-      setTeamTasks([]);
+      const tasks = await employeeTaskService.getTeamTasks();
+      
+      // Map API response to component interface
+      const mappedTasks: DailyTask[] = tasks.map(task => ({
+        id: task.id,
+        date: task.date,
+        title: task.title,
+        description: task.description || '',
+        status: (task.status === 'in_progress' ? 'in-progress' : task.status === 'cancelled' ? 'rejected' : task.status) as DailyTask['status'],
+        priority: task.priority,
+        hoursSpent: task.hoursSpent,
+        category: task.category || 'Other',
+        employeeId: task.userId,
+        employeeName: task.user ? `${task.user.firstName} ${task.user.lastName}` : 'Unknown',
+        createdAt: new Date().toISOString(),
+        completedAt: task.completedAt,
+      }));
+      
+      setTeamTasks(mappedTasks);
     } catch (error) {
+      console.error('Failed to fetch team tasks:', error);
       message.error('Failed to fetch team tasks');
+      setTeamTasks([]);
     }
   };
 
   const fetchTeamKPIs = async () => {
     try {
-      // TODO: API call to fetch team KPIs
-      setTeamKPIs([]);
+      const teamData = await employeeTaskService.getTeamKPI();
+      
+      // Map team KPI data
+      const mappedKPIs: EmployeeKPI[] = teamData.employeeStats.map(emp => ({
+        employeeId: '',
+        employeeName: emp.name,
+        designation: 'Employee',
+        department: 'General',
+        tasksCompleted: emp.completedTasks,
+        totalTasks: emp.totalTasks,
+        productivityScore: Math.round(emp.completionRate),
+        averageTaskTime: emp.totalHours / (emp.totalTasks || 1),
+        onTimeCompletion: Math.round(emp.completionRate),
+      }));
+      
+      setTeamKPIs(mappedKPIs);
     } catch (error) {
+      console.error('Failed to fetch team KPIs:', error);
       message.error('Failed to fetch team KPIs');
+      setTeamKPIs([]);
     }
   };
 
@@ -194,6 +230,10 @@ const MyKPIPage: React.FC = () => {
       status: 'pending',
       priority: 'medium',
       category: 'Development',
+      complexity: 'medium',
+      estimatedHours: 4,
+      // If admin, allow assigning to team members
+      ...(canViewAllKPI ? { employeeId: user?.id } : {}),
     });
     setTaskModalVisible(true);
   };
@@ -218,11 +258,105 @@ const MyKPIPage: React.FC = () => {
           // TODO: API call to delete task
           message.success('Task deleted successfully');
           fetchMyTasks();
+          if (canViewAllKPI) fetchTeamTasks();
         } catch (error) {
           message.error('Failed to delete task');
         }
       },
     });
+  };
+
+  // New handlers for Submit and Approve
+  const handleSubmitForApproval = (task: DailyTask) => {
+    setTaskForSubmit(task);
+    setSubmitModalVisible(true);
+  };
+
+  const handleSubmitTaskConfirm = async (submitData: SubmitTaskData) => {
+    if (!taskForSubmit) return;
+
+    try {
+      setLoading(true);
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('taskId', taskForSubmit.id);
+      formData.append('actualHours', submitData.actualHours.toString());
+      formData.append('notes', submitData.notes);
+
+      // Add proof files
+      submitData.proofs.forEach((file) => {
+        if (file.originFileObj) {
+          formData.append('proofs', file.originFileObj);
+        }
+      });
+
+      // TODO: Call API to submit task
+      // await employeeTaskService.submitTask(taskForSubmit.id, formData);
+
+      message.success('Task submitted for manager approval');
+      setSubmitModalVisible(false);
+      setTaskForSubmit(null);
+      fetchMyTasks();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Failed to submit task');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveTask = (task: DailyTask) => {
+    setTaskForApproval(task);
+    setApprovalModalVisible(true);
+  };
+
+  const handleApproveTaskConfirm = async (approvalData: ApprovalData) => {
+    if (!taskForApproval) return;
+
+    try {
+      setLoading(true);
+
+      // TODO: Call API to approve task
+      // await employeeTaskService.approveTask(taskForApproval.id, {
+      //   approved: true,
+      //   qualityScore: approvalData.qualityScore,
+      //   feedback: approvalData.feedback,
+      // });
+      console.log('Approving with data:', approvalData);
+
+      message.success('Task approved successfully');
+      setApprovalModalVisible(false);
+      setTaskForApproval(null);
+      fetchTeamTasks();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Failed to approve task');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectTaskConfirm = async (feedback: string) => {
+    if (!taskForApproval) return;
+
+    try {
+      setLoading(true);
+
+      // TODO: Call API to reject task
+      // await employeeTaskService.approveTask(taskForApproval.id, {
+      //   approved: false,
+      //   feedback,
+      // });
+      console.log('Rejecting with feedback:', feedback);
+
+      message.warning('Task rejected and returned to employee');
+      setApprovalModalVisible(false);
+      setTaskForApproval(null);
+      fetchTeamTasks();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Failed to reject task');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitTask = async () => {
@@ -328,34 +462,64 @@ const MyKPIPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => (
-        <Tag
-          icon={
-            status === 'completed' ? (
-              <CheckCircleOutlined />
-            ) : (
-              <ClockCircleOutlined />
-            )
-          }
-          color={
-            status === 'completed'
-              ? 'success'
-              : status === 'in-progress'
-              ? 'processing'
-              : 'default'
-          }
-        >
-          {status.replace('-', ' ').toUpperCase()}
-        </Tag>
-      ),
+      render: (status: string, record: DailyTask) => {
+        let displayStatus = status;
+        let icon = <ClockCircleOutlined />;
+        let color = 'default';
+
+        if (status === 'completed') {
+          displayStatus = record.managerApproved ? 'Approved' : 'Completed';
+          icon = <CheckCircleOutlined />;
+          color = record.managerApproved ? 'success' : 'processing';
+        } else if (status === 'submitted') {
+          displayStatus = 'Pending Approval';
+          icon = <ClockCircleOutlined />;
+          color = 'warning';
+        } else if (status === 'in-progress') {
+          displayStatus = 'In Progress';
+          icon = <ClockCircleOutlined />;
+          color = 'processing';
+        }
+
+        return (
+          <Tag icon={icon} color={color}>
+            {displayStatus.toUpperCase()}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_: any, record: DailyTask) => (
         <Space>
-          {record.status !== 'completed' && (
+          {/* Show Submit button for completed but not submitted tasks */}
+          {record.status === 'completed' && !record.managerApproved && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<SendOutlined />}
+              onClick={() => handleSubmitForApproval(record)}
+            >
+              Submit
+            </Button>
+          )}
+
+          {/* Show Approve button for managers on submitted tasks */}
+          {canViewAllKPI && record.status === 'submitted' && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<StarOutlined />}
+              onClick={() => handleApproveTask(record)}
+            >
+              Review
+            </Button>
+          )}
+
+          {/* Show Complete button for non-completed tasks */}
+          {record.status !== 'completed' && record.status !== 'submitted' && (
             <Button
               type="link"
               icon={<CheckOutlined />}
@@ -365,19 +529,25 @@ const MyKPIPage: React.FC = () => {
               Complete
             </Button>
           )}
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditTask(record)}
-            size="small"
-          />
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteTask(record.id)}
-            size="small"
-          />
+
+          {/* Edit/Delete only for non-submitted/approved tasks */}
+          {!record.managerApproved && record.status !== 'submitted' && (
+            <>
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEditTask(record)}
+                size="small"
+              />
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteTask(record.id)}
+                size="small"
+              />
+            </>
+          )}
         </Space>
       ),
     },
@@ -605,6 +775,25 @@ const MyKPIPage: React.FC = () => {
         confirmLoading={loading}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
+          {canViewAllKPI && (
+            <Form.Item
+              name="employeeId"
+              label="Assign To"
+              rules={[{ required: true, message: 'Please select employee' }]}
+            >
+              <Select placeholder="Select team member">
+                <Select.Option value={user?.id}>
+                  {`${user?.firstName} ${user?.lastName}`} (Me)
+                </Select.Option>
+                {teamKPIs.map((emp) => (
+                  <Select.Option key={emp.employeeId} value={emp.employeeId}>
+                    {emp.employeeName} - {emp.designation}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
           <Form.Item
             name="date"
             label="Date"
@@ -653,6 +842,25 @@ const MyKPIPage: React.FC = () => {
             </Col>
             <Col span={12}>
               <Form.Item
+                name="complexity"
+                label="Complexity"
+                rules={[{ required: true, message: 'Please select complexity' }]}
+                initialValue="medium"
+              >
+                <Select>
+                  <Select.Option value="trivial">Trivial (0.8x)</Select.Option>
+                  <Select.Option value="small">Small (1.0x)</Select.Option>
+                  <Select.Option value="medium">Medium (1.2x)</Select.Option>
+                  <Select.Option value="complex">Complex (1.4x)</Select.Option>
+                  <Select.Option value="critical">Critical (1.6x)</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
                 name="priority"
                 label="Priority"
                 rules={[{ required: true, message: 'Please select priority' }]}
@@ -664,13 +872,22 @@ const MyKPIPage: React.FC = () => {
                 </Select>
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                name="estimatedHours"
+                label="Estimated Hours"
+                rules={[{ required: true, message: 'Please enter estimated hours' }]}
+              >
+                <Input type="number" min={0.25} step={0.25} placeholder="e.g., 4" />
+              </Form.Item>
+            </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="hoursSpent"
-                label="Hours Spent"
+                label="Actual Hours Spent"
                 rules={[{ required: true, message: 'Please enter hours spent' }]}
               >
                 <Input type="number" step="0.5" min="0" suffix="hours" />
@@ -692,6 +909,36 @@ const MyKPIPage: React.FC = () => {
           </Row>
         </Form>
       </Modal>
+
+      {/* Task Submit Modal (with proof upload) */}
+      {taskForSubmit && (
+        <TaskSubmitModal
+          visible={submitModalVisible}
+          taskId={taskForSubmit.id}
+          taskTitle={taskForSubmit.title}
+          estimatedHours={taskForSubmit.estimatedHours || 0}
+          complexity={taskForSubmit.complexity || 'medium'}
+          onOk={handleSubmitTaskConfirm}
+          onCancel={() => {
+            setSubmitModalVisible(false);
+            setTaskForSubmit(null);
+          }}
+        />
+      )}
+
+      {/* Task Approval Modal (for managers) */}
+      {taskForApproval && (
+        <TaskApprovalModal
+          visible={approvalModalVisible}
+          task={taskForApproval}
+          onApprove={handleApproveTaskConfirm}
+          onReject={handleRejectTaskConfirm}
+          onCancel={() => {
+            setApprovalModalVisible(false);
+            setTaskForApproval(null);
+          }}
+        />
+      )}
     </div>
   );
 };

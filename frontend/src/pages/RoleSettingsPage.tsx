@@ -226,7 +226,8 @@ const RoleSettingsPage: React.FC = () => {
   if (loading && roles.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Loading role settings..." />
+        <Spin size="large" />
+        <div style={{ marginTop: 16 }}>Loading role settings...</div>
       </div>
     );
   }

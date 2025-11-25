@@ -9,9 +9,9 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Tag,
+  App,
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { customerService } from '../services/customer.service';
@@ -30,6 +30,7 @@ interface Customer {
 }
 
 const CustomersPage: React.FC = () => {
+  const { message } = App.useApp();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);

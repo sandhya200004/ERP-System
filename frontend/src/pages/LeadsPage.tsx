@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Card, Typography, Modal, Form, Input, Select, message } from 'antd';
+import { Table, Button, Space, Tag, Card, Typography, Modal, Form, Input, Select, App } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -15,6 +15,7 @@ interface Lead {
 }
 
 const LeadsPage: React.FC = () => {
+  const { message } = App.useApp();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);

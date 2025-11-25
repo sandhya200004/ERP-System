@@ -12,12 +12,12 @@ import {
   Select,
   DatePicker,
   InputNumber,
-  message,
   Row,
   Col,
   Statistic,
   Descriptions,
   Alert,
+  App,
 } from 'antd';
 import {
   PlusOutlined,
@@ -65,6 +65,7 @@ interface Invoice {
 }
 
 const PaymentsPage: React.FC = () => {
+  const { message } = App.useApp();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);

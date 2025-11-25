@@ -178,7 +178,8 @@ const ReportsPage: React.FC = () => {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" tip="Loading report data..." />
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>Loading report data...</div>
         </div>
       ) : (
         <Tabs activeKey={active} onChange={(k) => setActive(k)}>

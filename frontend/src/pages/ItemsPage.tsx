@@ -10,9 +10,9 @@ import {
   Input,
   InputNumber,
   Select,
-  message,
   Popconfirm,
   Tag,
+  App,
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { itemService } from '../services/item.service';
@@ -32,6 +32,7 @@ interface Item {
 }
 
 const ItemsPage: React.FC = () => {
+  const { message } = App.useApp();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -108,7 +109,7 @@ const ItemsPage: React.FC = () => {
       dataIndex: 'itemType',
       key: 'itemType',
       render: (type: string) => (
-        <Tag color={type === 'goods' ? 'blue' : 'green'}>{type.toUpperCase()}</Tag>
+        type ? <Tag color={type === 'goods' ? 'blue' : 'green'}>{type.toUpperCase()}</Tag> : '-'
       ),
     },
     {
@@ -116,12 +117,13 @@ const ItemsPage: React.FC = () => {
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      render: (text: string) => text || '-',
     },
     {
       title: 'Unit Price',
       dataIndex: 'unitPrice',
       key: 'unitPrice',
-      render: (price: number) => `₹${price.toLocaleString('en-IN')}`,
+      render: (price: number) => price != null ? `₹${price.toLocaleString('en-IN')}` : '₹0',
     },
     {
       title: 'Status',

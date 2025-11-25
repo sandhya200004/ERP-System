@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Typography, Select } from 'antd';
+import { Form, Input, Button, Card, Typography, Select, App } from 'antd';
 import { UserOutlined, LockOutlined, BankOutlined, MailOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
@@ -8,6 +8,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const RegisterPage: React.FC = () => {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 

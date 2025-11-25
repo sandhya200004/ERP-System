@@ -12,11 +12,11 @@ import {
   Space, 
   Card, 
   Typography, 
-  Tag, 
-  message,
+  Tag,
   Row,
   Col,
-  Statistic
+  Statistic,
+  App
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -46,6 +46,7 @@ interface Expense {
 }
 
 const ExpensesPage: React.FC = () => {
+  const { message } = App.useApp();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);

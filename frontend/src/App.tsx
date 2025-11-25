@@ -12,8 +12,17 @@ import QuotesPage from './pages/QuotesPage';
 import PaymentsPage from './pages/PaymentsPage';
 import AttendancePage from './pages/AttendancePage';
 import MyKPIPage from './pages/MyKPIPage';
+import EmployeesPage from './pages/EmployeesPage';
+import KPIReviewPage from './pages/KPIReviewPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import RoleSettingsPage from './pages/RoleSettingsPage';
+import FeatureControlPage from './pages/FeatureControlPage';
+import ProfilePage from './pages/ProfilePage';
+import RegisterPage from './pages/RegisterPage';
+import LeadsPage from './pages/LeadsPage';
+import ProposalsPage from './pages/ProposalsPage';
+import ExpensesPage from './pages/ExpensesPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -50,6 +59,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route
               path="/"
               element={
@@ -66,8 +76,16 @@ function App() {
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="kpi" element={<MyKPIPage />} />
+              <Route path="employees" element={<EmployeesPage />} />
+              <Route path="kpi-review" element={<KPIReviewPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="role-settings" element={<RoleSettingsPage />} />
+              <Route path="feature-control" element={<FeatureControlPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="leads" element={<LeadsPage />} />
+              <Route path="proposals" element={<ProposalsPage />} />
+              <Route path="expenses" element={<ExpensesPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

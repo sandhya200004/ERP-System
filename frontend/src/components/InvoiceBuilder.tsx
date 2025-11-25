@@ -12,8 +12,8 @@ import {
   Row,
   Col,
   Typography,
-  message,
   Card,
+  App,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, DownloadOutlined, PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -21,6 +21,7 @@ import { customerService } from '../services/customer.service';
 import { itemService } from '../services/item.service';
 import { invoiceService } from '../services/invoice.service';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -41,6 +42,7 @@ interface InvoiceLine {
 }
 
 const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuccess }) => {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [customers, setCustomers] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -48,34 +50,52 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
+  const [fetchingData, setFetchingData] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      fetchCustomers();
-      fetchItems();
-      addLine();
+      // Initialize form with default dates when modal opens
+      form.setFieldsValue({
+        invoiceDate: dayjs(),
+        dueDate: dayjs().add(30, 'days'),
+      });
+      
+      // Always fetch data when modal opens if not already loaded
+      if (customers.length === 0 || items.length === 0) {
+        fetchData();
+      } else if (lines.length === 0) {
+        // If data already loaded but no lines, add one
+        addLine();
+      }
     }
   }, [visible]);
 
-  const fetchCustomers = async () => {
+  const fetchData = async () => {
+    setFetchingData(true);
     try {
-      const response = await customerService.getAll();
-      // Handle both array and object with data property
-      const customerData = Array.isArray(response) ? response : response.data || [];
+      // Fetch customers and items in parallel
+      const [customersResponse, itemsResponse] = await Promise.all([
+        customerService.getAll().catch(() => ({ data: [] })),
+        itemService.getAll().catch(() => ({ data: [] })),
+      ]);
+      
+      const customerData = Array.isArray(customersResponse) ? customersResponse : customersResponse.data || [];
+      const itemData = Array.isArray(itemsResponse) ? itemsResponse : itemsResponse.data || [];
+      
+      console.log('Fetched customers:', customerData.length);
+      console.log('Fetched items:', itemData.length);
+      
       setCustomers(customerData);
-    } catch (error) {
-      message.error('Failed to fetch customers');
-    }
-  };
-
-  const fetchItems = async () => {
-    try {
-      const response = await itemService.getAll();
-      // Handle both array and object with data property
-      const itemData = Array.isArray(response) ? response : response.data || [];
       setItems(itemData);
+      
+      if (lines.length === 0) {
+        addLine();
+      }
     } catch (error) {
-      message.error('Failed to fetch items');
+      console.error('Failed to fetch data:', error);
+      message.error('Failed to fetch data. Please try again.');
+    } finally {
+      setFetchingData(false);
     }
   };
 
@@ -143,29 +163,74 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      const values = await form.validateFields();
-
-      const invoicePayload = {
-        customerId: values.customerId,
-        invoiceDate: values.invoiceDate.format('YYYY-MM-DD'),
-        dueDate: values.dueDate.format('YYYY-MM-DD'),
-        notes: values.notes,
-        lines: lines
-          .filter((line) => line.description)
-          .map((line) => ({
-            itemId: line.itemId || '',
+      
+      // Use invoiceData from preview if available, otherwise get from form
+      let invoicePayload;
+      
+      if (previewMode && invoiceData) {
+        // In preview mode, use the already validated data
+        invoicePayload = {
+          customerId: invoiceData.customerId,
+          invoiceDate: dayjs(invoiceData.invoiceDate).format('YYYY-MM-DD'),
+          dueDate: dayjs(invoiceData.dueDate).format('YYYY-MM-DD'),
+          notes: invoiceData.notes || '',
+          terms: invoiceData.terms || '',
+          lines: invoiceData.lines.map((line: any) => ({
+            itemId: line.itemId || undefined,
             description: line.description,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
+            discount: 0,
           })),
-      };
+        };
+      } else {
+        // Not in preview mode, get from form
+        const values = await form.validateFields();
+        const invoiceDate = values.invoiceDate ? dayjs(values.invoiceDate) : dayjs();
+        const dueDate = values.dueDate ? dayjs(values.dueDate) : dayjs().add(30, 'days');
 
-      await invoiceService.create(invoicePayload);
+        invoicePayload = {
+          customerId: values.customerId,
+          invoiceDate: invoiceDate.format('YYYY-MM-DD'),
+          dueDate: dueDate.format('YYYY-MM-DD'),
+          notes: values.notes || '',
+          terms: values.terms || '',
+          lines: lines
+            .filter((line) => line.description && line.quantity > 0)
+            .map((line) => ({
+              itemId: line.itemId || undefined,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              discount: 0,
+            })),
+        };
+      }
+
+      console.log('Creating invoice with payload:', invoicePayload);
+      const response = await invoiceService.create(invoicePayload);
+      console.log('Invoice created:', response);
       message.success('Invoice created successfully!');
+      
+      // Call onSuccess to refresh the invoice list
+      console.log('Calling onSuccess callback');
       onSuccess();
+      
+      // Close the modal
       handleClose();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Failed to create invoice');
+      console.error('Invoice creation error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Display detailed validation errors
+      if (error.response?.data?.message) {
+        const errorMessages = Array.isArray(error.response.data.message) 
+          ? error.response.data.message.join(', ')
+          : error.response.data.message;
+        message.error(errorMessages);
+      } else {
+        message.error(error.message || 'Failed to create invoice');
+      }
     } finally {
       setLoading(false);
     }
@@ -173,26 +238,49 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
 
   const handleDownloadPDF = async () => {
     const invoiceElement = document.getElementById('invoice-preview');
-    if (!invoiceElement) return;
+    if (!invoiceElement) {
+      message.error('Invoice preview not found');
+      return;
+    }
 
     try {
+      message.loading('Generating PDF...', 0);
+      
       const canvas = await html2canvas(invoiceElement, {
+        scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: '#ffffff',
       } as any);
 
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Create PDF using window.jspdf (loaded via CDN)
-      const { jsPDF } = (window as any);
       const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`invoice-${invoiceData?.invoiceNumber || 'draft'}.pdf`);
+      
+      // Handle multi-page if content is too long
+      const pageHeight = 297; // A4 height in mm
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      message.destroy();
+      pdf.save(`invoice-${invoiceData?.invoiceNumber || 'draft'}-${dayjs().format('YYYYMMDD')}.pdf`);
       message.success('PDF downloaded successfully!');
-    } catch (error) {
-      message.error('Failed to generate PDF');
+    } catch (error: any) {
+      message.destroy();
+      console.error('PDF generation error:', error);
+      message.error(error.message || 'Failed to generate PDF');
     }
   };
 
@@ -517,14 +605,19 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
       onCancel={handleClose}
       width={1200}
       footer={[
-        <Button key="cancel" onClick={handleClose}>
+        <Button key="cancel" onClick={handleClose} disabled={fetchingData}>
           Cancel
         </Button>,
-        <Button key="preview" onClick={handlePreview}>
+        <Button key="preview" onClick={handlePreview} disabled={fetchingData || lines.every(l => !l.description)}>
           Preview
         </Button>,
       ]}
     >
+      {fetchingData ? (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <Typography.Text>Loading customers and items...</Typography.Text>
+        </div>
+      ) : (
       <Form form={form} layout="vertical">
         <Row gutter={16}>
           <Col span={12}>
@@ -606,10 +699,20 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
           </Row>
         </Card>
 
-        <Form.Item name="notes" label="Notes" style={{ marginTop: 16 }}>
-          <TextArea rows={3} placeholder="Additional notes or payment terms..." />
-        </Form.Item>
+        <Row gutter={16} style={{ marginTop: 16 }}>
+          <Col span={12}>
+            <Form.Item name="notes" label="Notes">
+              <TextArea rows={3} placeholder="Additional notes..." />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="terms" label="Payment Terms">
+              <TextArea rows={3} placeholder="Payment terms and conditions..." />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
+      )}
     </Modal>
   );
 };

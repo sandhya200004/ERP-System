@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Card, Typography, Modal, Form, Input, Select, DatePicker, message } from 'antd';
+import { Table, Button, Space, Tag, Card, Typography, Modal, Form, Input, Select, DatePicker, App } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { quoteService } from '../services/quote.service';
 import type { Quote } from '../services/quote.service';
@@ -9,6 +9,7 @@ const { Title } = Typography;
 const { TextArea } = Input;
 
 const QuotesPage: React.FC = () => {
+  const { message } = App.useApp();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);

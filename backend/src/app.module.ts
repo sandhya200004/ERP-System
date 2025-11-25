@@ -27,6 +27,9 @@ import { PublicModule } from './modules/public/public.module';
 import { EmployeeTaskModule } from './modules/employee-task/employee-task.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { FeatureControlModule } from './modules/feature-control/feature-control.module';
+import { EmployeeModule } from './modules/employee/employee.module';
+import { KpiModule } from './modules/kpi/kpi.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -69,6 +72,9 @@ import { FeatureControlModule } from './modules/feature-control/feature-control.
     EmployeeTaskModule,
     AttendanceModule,
     FeatureControlModule,
+    EmployeeModule,
+    KpiModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}

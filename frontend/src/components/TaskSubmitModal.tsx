@@ -7,7 +7,6 @@ import {
   Upload,
   Button,
   Space,
-  App,
   List,
   Tag,
   message as antdMessage,
@@ -19,6 +18,7 @@ const { TextArea } = Input;
 
 interface TaskSubmitModalProps {
   visible: boolean;
+  id: string;
   taskTitle: string;
   estimatedHours: number;
   complexity: string;

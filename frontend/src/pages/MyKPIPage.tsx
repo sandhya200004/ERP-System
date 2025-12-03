@@ -914,7 +914,7 @@ const MyKPIPage: React.FC = () => {
       {taskForSubmit && (
         <TaskSubmitModal
           visible={submitModalVisible}
-          taskId={taskForSubmit.id}
+          id={taskForSubmit.id}
           taskTitle={taskForSubmit.title}
           estimatedHours={taskForSubmit.estimatedHours || 0}
           complexity={taskForSubmit.complexity || 'medium'}

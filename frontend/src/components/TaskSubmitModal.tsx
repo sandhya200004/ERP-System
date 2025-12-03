@@ -3,7 +3,6 @@ import {
   Modal,
   Form,
   Input,
-  Select,
   InputNumber,
   Upload,
   Button,
@@ -11,17 +10,15 @@ import {
   App,
   List,
   Tag,
+  message as antdMessage,
 } from 'antd';
 import { UploadOutlined, DeleteOutlined, FileOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
-import dayjs from 'dayjs';
 
 const { TextArea } = Input;
-const { Option } = Select;
 
 interface TaskSubmitModalProps {
   visible: boolean;
-  taskId: string;
   taskTitle: string;
   estimatedHours: number;
   complexity: string;
@@ -43,16 +40,8 @@ const complexityRequirements: Record<string, number> = {
   critical: 3,
 };
 
-const TaskSubmitModal: React.FC<TaskSubmitModalProps> = ({
-  visible,
-  taskId,
-  taskTitle,
-  estimatedHours,
-  complexity,
-  onOk,
-  onCancel,
-}) => {
-  const { message } = App.useApp();
+const TaskSubmitModal: React.FC<TaskSubmitModalProps> = (props) => {
+  const { visible, taskTitle, estimatedHours, complexity, onOk, onCancel } = props;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -62,9 +51,8 @@ const TaskSubmitModal: React.FC<TaskSubmitModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-
       if (fileList.length < minProofs) {
-        message.error(`This task requires at least ${minProofs} proof(s) for ${complexity} complexity`);
+        antdMessage.error(`This task requires at least ${minProofs} proof(s) for ${complexity} complexity`);
         return;
       }
 
@@ -75,11 +63,10 @@ const TaskSubmitModal: React.FC<TaskSubmitModalProps> = ({
         notes: values.notes || '',
         proofs: fileList,
       };
-
       onOk(submitData);
     } catch (error: any) {
       if (!error.errorFields) {
-        message.error('Failed to submit task');
+        antdMessage.error('Failed to submit task');
       }
     } finally {
       setLoading(false);
@@ -90,10 +77,10 @@ const TaskSubmitModal: React.FC<TaskSubmitModalProps> = ({
     setFileList(newFileList);
   };
 
-  const beforeUpload = (file: File) => {
-    const isLt10M = file.size / 1024 / 1024 < 10;
+  const beforeUpload = (file: UploadFile) => {
+    const isLt10M = file.size! / 1024 / 1024 < 10;
     if (!isLt10M) {
-      message.error('File must be smaller than 10MB');
+      antdMessage.error('File must be smaller than 10MB');
       return false;
     }
     return false; // Prevent auto upload

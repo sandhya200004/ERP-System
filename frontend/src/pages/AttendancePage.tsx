@@ -6,7 +6,6 @@ import {
   Space,
   Typography,
   Tag,
-  message,
   Row,
   Col,
   Statistic,
@@ -18,6 +17,7 @@ import {
   Alert,
   Spin,
   Divider,
+  App,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -29,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useAuthStore } from '../store/authStore';
+import { attendanceService } from '../services/attendance.service';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -50,13 +51,14 @@ interface AttendanceRecord {
 }
 
 const AttendancePage: React.FC = () => {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const { user } = useAuthStore();
+  useAuthStore();
 
   // Office Location (CodeServeTech Solutions)
   // From Google Maps embed: 18.73805058239819, 73.66970757550314
@@ -81,6 +83,11 @@ const AttendancePage: React.FC = () => {
     fetchAttendanceHistory();
     requestLocationPermission();
   }, []);
+
+  // Refetch history when selected month changes
+  useEffect(() => {
+    fetchAttendanceHistory();
+  }, [selectedMonth]);
 
   // Request location permission on component mount
   const requestLocationPermission = () => {
@@ -171,10 +178,25 @@ const AttendancePage: React.FC = () => {
 
   const fetchTodayAttendance = async () => {
     try {
-      // Mock data - will connect to API
-      const mockRecord: AttendanceRecord | null = null; // No check-in yet
-      setTodayAttendance(mockRecord);
+      const todayStatus = await attendanceService.getTodayStatus();
+      if (todayStatus.hasCheckedIn && todayStatus.attendance) {
+        const att = todayStatus.attendance;
+        const record: AttendanceRecord = {
+          id: att.id,
+          userId: att.userId,
+          userName: att.user ? `${att.user.firstName} ${att.user.lastName}` : 'Unknown',
+          date: att.date,
+          checkIn: att.checkIn,
+          checkOut: att.checkOut,
+          status: 'present', // Calculate based on time if needed
+          workingHours: att.hoursWorked,
+        };
+        setTodayAttendance(record);
+      } else {
+        setTodayAttendance(null);
+      }
     } catch (error) {
+      console.error('Failed to fetch today attendance:', error);
       message.error('Failed to fetch attendance');
     }
   };
@@ -182,41 +204,40 @@ const AttendancePage: React.FC = () => {
   const fetchAttendanceHistory = async () => {
     try {
       setLoading(true);
-      // Mock data
-      const mockHistory: AttendanceRecord[] = [
-        {
-          id: '1',
-          userId: user?.id || '1',
-          userName: user?.firstName + ' ' + user?.lastName || 'John Doe',
-          date: '2025-11-06',
-          checkIn: '09:25:00',
-          checkOut: '18:35:00',
-          status: 'present',
-          workingHours: 9.17
-        },
-        {
-          id: '2',
-          userId: user?.id || '1',
-          userName: user?.firstName + ' ' + user?.lastName || 'John Doe',
-          date: '2025-11-05',
-          checkIn: '09:50:00',
-          checkOut: '18:20:00',
-          status: 'late',
-          workingHours: 8.5
-        },
-        {
-          id: '3',
-          userId: user?.id || '1',
-          userName: user?.firstName + ' ' + user?.lastName || 'John Doe',
-          date: '2025-11-04',
-          checkIn: '09:30:00',
-          checkOut: '18:30:00',
-          status: 'present',
-          workingHours: 9
+      const startOfMonth = selectedMonth.startOf('month').format('YYYY-MM-DD');
+      const endOfMonth = selectedMonth.endOf('month').format('YYYY-MM-DD');
+      
+      const attendances = await attendanceService.getMyAttendance({
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      });
+      
+      const mappedHistory: AttendanceRecord[] = attendances.map((att) => {
+        // Calculate status based on check-in time
+        const checkInTime = dayjs(`${att.date} ${att.checkIn}`);
+        const officeStart = dayjs(`${att.date} ${OFFICE_START_TIME}`);
+        const minutesLate = checkInTime.diff(officeStart, 'minute');
+        
+        let status: 'present' | 'late' | 'absent' | 'half-day' = 'present';
+        if (minutesLate > LATE_THRESHOLD_MINUTES) {
+          status = 'late';
         }
-      ];
-      setAttendanceHistory(mockHistory);
+        
+        return {
+          id: att.id,
+          userId: att.userId,
+          userName: att.user ? `${att.user.firstName} ${att.user.lastName}` : 'Unknown',
+          date: att.date,
+          checkIn: att.checkIn,
+          checkOut: att.checkOut,
+          status,
+          workingHours: att.hoursWorked,
+        };
+      });
+      
+      setAttendanceHistory(mappedHistory);
     } catch (error) {
+      console.error('Failed to fetch attendance history:', error);
       message.error('Failed to fetch history');
     } finally {
       setLoading(false);
@@ -253,42 +274,38 @@ const AttendancePage: React.FC = () => {
         return;
       }
 
-      const now = dayjs();
-      const currentTime = now.format('HH:mm:ss');
-      const today = now.format('YYYY-MM-DD');
+      // Call API to check in
+      const result = await attendanceService.checkIn({
+        latitude: locationResult.userLocation.latitude,
+        longitude: locationResult.userLocation.longitude,
+        location: OFFICE_LOCATION.name,
+        notes: `Distance from office: ${locationResult.distance}m`,
+      });
+
+      // Update local state
+      await fetchTodayAttendance();
+      await fetchAttendanceHistory();
       
       // Calculate if late
-      const officeStart = dayjs(`${today} ${OFFICE_START_TIME}`);
-      const checkInTime = dayjs(`${today} ${currentTime}`);
+      const now = dayjs();
+      const checkInTime = dayjs(`${result.attendance.date} ${result.attendance.checkIn}`);
+      const officeStart = dayjs(`${result.attendance.date} ${OFFICE_START_TIME}`);
       const minutesLate = checkInTime.diff(officeStart, 'minute');
       
-      const status: 'present' | 'late' = minutesLate > LATE_THRESHOLD_MINUTES ? 'late' : 'present';
-      
-      const newRecord: AttendanceRecord = {
-        id: Date.now().toString(),
-        userId: user?.id || '1',
-        userName: user?.firstName + ' ' + user?.lastName || 'John Doe',
-        date: today,
-        checkIn: currentTime,
-        status,
-        location: locationResult.userLocation
-      };
-      
-      setTodayAttendance(newRecord);
-      setAttendanceHistory([newRecord, ...attendanceHistory]);
-      
-      if (status === 'late') {
+      if (minutesLate > LATE_THRESHOLD_MINUTES) {
         message.warning(
-          `Checked in at ${now.format('HH:mm')} - You are ${minutesLate} minutes late. Distance from office: ${locationResult.distance}m`
+          `Checked in at ${checkInTime.format('HH:mm')} - You are ${minutesLate} minutes late. Distance from office: ${result.distance}m`
         );
       } else {
         message.success(
-          `Checked in successfully at ${now.format('HH:mm')}! Distance from office: ${locationResult.distance}m`
+          `Checked in successfully at ${checkInTime.format('HH:mm')}! Distance from office: ${result.distance}m`
         );
       }
-    } catch (error) {
-      setCheckingLocation(false);
-      if (error instanceof GeolocationPositionError) {
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      if (error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else if (error instanceof GeolocationPositionError) {
         Modal.error({
           title: 'Location Access Required',
           content: (
@@ -305,6 +322,8 @@ const AttendancePage: React.FC = () => {
       } else {
         message.error('Failed to check in. Please try again.');
       }
+    } finally {
+      setCheckingLocation(false);
     }
   };
 
@@ -340,30 +359,26 @@ const AttendancePage: React.FC = () => {
         return;
       }
 
-      const now = dayjs();
-      const currentTime = now.format('HH:mm:ss');
+      // Call API to check out
+      const result = await attendanceService.checkOut({
+        latitude: locationResult.userLocation.latitude,
+        longitude: locationResult.userLocation.longitude,
+        notes: `Distance from office: ${locationResult.distance}m`,
+      });
       
-      const checkInTime = dayjs(`${todayAttendance.date} ${todayAttendance.checkIn}`);
-      const checkOutTime = dayjs(`${todayAttendance.date} ${currentTime}`);
-      const workingHours = checkOutTime.diff(checkInTime, 'hour', true);
+      // Update local state
+      await fetchTodayAttendance();
+      await fetchAttendanceHistory();
       
-      const updatedRecord: AttendanceRecord = {
-        ...todayAttendance,
-        checkOut: currentTime,
-        workingHours: Math.round(workingHours * 100) / 100
-      };
-      
-      setTodayAttendance(updatedRecord);
-      setAttendanceHistory(attendanceHistory.map(record => 
-        record.id === todayAttendance.id ? updatedRecord : record
-      ));
-      
+      const hoursWorked = result.hoursWorked || 0;
       message.success(
-        `Checked out at ${now.format('HH:mm')} - Total working hours: ${updatedRecord.workingHours}. Distance from office: ${locationResult.distance}m`
+        `Checked out - Total working hours: ${hoursWorked.toFixed(2)}. Distance from office: ${result.distance}m`
       );
-    } catch (error) {
-      setCheckingLocation(false);
-      if (error instanceof GeolocationPositionError) {
+    } catch (error: any) {
+      console.error('Check-out error:', error);
+      if (error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else if (error instanceof GeolocationPositionError) {
         Modal.error({
           title: 'Location Access Required',
           content: 'Please enable location services to check out.',
@@ -371,6 +386,8 @@ const AttendancePage: React.FC = () => {
       } else {
         message.error('Failed to check out. Please try again.');
       }
+    } finally {
+      setCheckingLocation(false);
     }
   };
 
@@ -418,7 +435,7 @@ const AttendancePage: React.FC = () => {
     }];
   };
 
-  const dateCellRender = (value: Dayjs) => {
+  const cellRender = (value: Dayjs) => {
     const listData = getListData(value);
     return (
       <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -782,7 +799,7 @@ const AttendancePage: React.FC = () => {
         <Calendar
           value={selectedMonth}
           onSelect={setSelectedMonth}
-          dateCellRender={dateCellRender}
+          cellRender={cellRender}
         />
       </Card>
 

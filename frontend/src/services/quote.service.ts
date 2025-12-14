@@ -16,10 +16,16 @@ export interface CreateQuoteData {
   quoteDate: string;
   validUntil: string;
   notes?: string;
+  terms?: string;
+  currencyCode?: string;
+  discount?: number;
   lines: Array<{
-    itemId: string;
+    itemId?: string;
+    description: string;
     quantity: number;
     unitPrice: number;
+    discount?: number;
+    taxIds?: string[];
   }>;
 }
 

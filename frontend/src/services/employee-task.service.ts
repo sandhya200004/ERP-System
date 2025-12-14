@@ -20,6 +20,7 @@ export interface EmployeeTask {
 }
 
 export interface CreateTaskDto {
+  userId?: string; // Optional: assign to another user
   date: string;
   title: string;
   description?: string;

@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { customerService } from '../services/customer.service';
+import { quoteService } from '../services/quote.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -294,28 +295,90 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
   const handleSubmit = async () => {
     try {
       setLoading(true);
+
+      // If we're in preview mode, use proposalData which was already validated
+      if (previewMode && proposalData) {
+        const payload = {
+          customerId: proposalData.customerId,
+          quoteDate: dayjs().format('YYYY-MM-DD'),
+          validUntil: proposalData.validUntil,
+          notes: proposalData.terms || '',
+          lines: proposalData.lines.map((line: ProposalLine) => ({
+            description: `${line.service}: ${line.description || ''}`.trim(),
+            quantity: 1,
+            unitPrice: Number(line.price),
+            discount: 0
+          }))
+        };
+
+        console.log('Submitting proposal payload:', payload);
+
+        if (editingProposal) {
+          await quoteService.update(editingProposal.id, payload);
+          message.success('Proposal updated successfully!');
+        } else {
+          await quoteService.create(payload);
+          message.success('Proposal created successfully!');
+        }
+        
+        onSuccess();
+        handleClose();
+        return;
+      }
+
+      // Otherwise validate form first
       const values = await form.validateFields();
       
-      // TODO: Connect to API with payload
-      console.log('Proposal payload:', {
-        customerId: values.customerId,
-        validUntil: values.validUntil.format('YYYY-MM-DD'),
-        terms: values.terms,
-        status: values.status || 'draft',
-        lines: lines.filter(line => line.service).map(line => ({
-          service: line.service,
-          description: line.description,
-          deliverables: line.deliverables,
-          timeline: line.timeline,
-          price: line.price
-        }))
-      });
+      // Validate that we have at least one line with service and price
+      const validLines = lines.filter(line => line.service && line.price > 0);
+      if (validLines.length === 0) {
+        message.error('Please add at least one service with a price');
+        setLoading(false);
+        return;
+      }
 
-      message.success(editingProposal ? 'Proposal updated successfully!' : 'Proposal created successfully!');
+      // Validate required fields
+      if (!values.customerId) {
+        message.error('Please select a client');
+        setLoading(false);
+        return;
+      }
+
+      if (!values.validUntil) {
+        message.error('Please select a valid until date');
+        setLoading(false);
+        return;
+      }
+      
+      const payload = {
+        customerId: values.customerId,
+        quoteDate: dayjs().format('YYYY-MM-DD'),
+        validUntil: values.validUntil.format('YYYY-MM-DD'),
+        notes: values.terms || '',
+        lines: validLines.map(line => ({
+          description: `${line.service}: ${line.description || ''}`.trim(),
+          quantity: 1,
+          unitPrice: Number(line.price),
+          discount: 0
+        }))
+      };
+
+      console.log('Submitting proposal payload:', payload);
+
+      if (editingProposal) {
+        await quoteService.update(editingProposal.id, payload);
+        message.success('Proposal updated successfully!');
+      } else {
+        await quoteService.create(payload);
+        message.success('Proposal created successfully!');
+      }
+      
       onSuccess();
       handleClose();
     } catch (error: any) {
-      message.error('Please fill all required fields');
+      console.error('Error saving proposal:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save proposal';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -656,19 +719,86 @@ const ProposalsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [builderVisible, setBuilderVisible] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [viewingProposal, setViewingProposal] = useState<Proposal | null>(null);
 
   useEffect(() => {
     fetchProposals();
   }, []);
 
+  const handleViewPDF = async (proposal: Proposal) => {
+    try {
+      // Fetch full proposal details including line items
+      const fullProposal = await quoteService.getById(proposal.id);
+      console.log('Full proposal data:', fullProposal);
+      
+      // Map the API response to our Proposal interface
+      const mappedProposal: Proposal = {
+        id: fullProposal.id,
+        proposalNumber: fullProposal.quoteNumber || proposal.proposalNumber,
+        customer: proposal.customer,
+        validUntil: fullProposal.validUntil,
+        status: (['draft', 'sent', 'accepted', 'rejected'] as const).includes(fullProposal.status as any)
+          ? (fullProposal.status as 'draft' | 'sent' | 'accepted' | 'rejected')
+          : 'draft',
+        lines: ((fullProposal as any).lines || []).map((line: any) => ({
+          id: line.id,
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unit_price || line.unitPrice,
+          discount: line.discount || 0,
+        })),
+        totalAmount: fullProposal.total || 0,
+        terms: fullProposal.notes || '',
+        createdDate: fullProposal.quoteDate || proposal.createdDate
+      };
+      
+      setViewingProposal(mappedProposal);
+    } catch (error) {
+      console.error('Error fetching proposal details:', error);
+      message.error('Failed to load proposal details');
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      // Mock data
-      const mockProposals: Proposal[] = [];
-      setProposals(mockProposals);
-    } catch (error) {
-      message.error('Failed to fetch proposals');
+      const response = await quoteService.getAll();
+      console.log('API Response:', response);
+      
+      // Extract the data array from the response
+      const quotes = response || [];
+      console.log('Quotes array:', quotes);
+      
+      const mappedProposals: Proposal[] = quotes.map((quote: any) => {
+        console.log('Mapping quote:', quote);
+        return {
+          id: quote.id,
+          proposalNumber: quote.quote_number || quote.quoteNumber,
+          customer: { 
+            id: quote.customer_id,
+            name: quote.customers?.name || quote.customer?.name || 'Unknown' 
+          },
+          validUntil: quote.valid_until || quote.validUntil,
+          status: quote.status || 'draft',
+          lines: [],
+          totalAmount: quote.total || 0,
+          terms: quote.notes || '',
+          createdDate: quote.quote_date || quote.quoteDate || dayjs().format('YYYY-MM-DD')
+        };
+      });
+      console.log('Mapped proposals:', mappedProposals);
+      setProposals(mappedProposals);
+    } catch (error: any) {
+      console.error('Error fetching proposals:', error);
+      // Only show error if it's not a 404 (no data) or network issue
+      if (error.response?.status && error.response.status !== 404) {
+        message.error(error.response?.data?.message || 'Failed to fetch proposals');
+      }
+      setProposals([]);
     } finally {
       setLoading(false);
     }
@@ -729,6 +859,7 @@ const ProposalsPage: React.FC = () => {
           <Button
             size="small"
             icon={<EyeOutlined />}
+            onClick={() => handleViewPDF(record)}
           >
             View
           </Button>
@@ -749,6 +880,25 @@ const ProposalsPage: React.FC = () => {
 
   return (
     <div>
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .ant-modal-root, .ant-modal-root * {
+            visibility: visible;
+          }
+          .ant-modal-wrap {
+            position: absolute;
+            left: 0;
+            top: 0;
+          }
+          .ant-modal-header, .ant-modal-footer {
+            display: none !important;
+          }
+        }
+      `}</style>
+      
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Title level={2}>Proposals</Title>
@@ -782,6 +932,128 @@ const ProposalsPage: React.FC = () => {
         onSuccess={fetchProposals}
         editingProposal={editingProposal}
       />
+
+      <Modal
+        title="Proposal Preview"
+        open={!!viewingProposal}
+        onCancel={() => setViewingProposal(null)}
+        width={900}
+        footer={[
+          <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
+            Print / Save as PDF
+          </Button>,
+          <Button key="close" onClick={() => setViewingProposal(null)}>
+            Close
+          </Button>
+        ]}
+      >
+        {viewingProposal && (
+          <div style={{ padding: '20px', backgroundColor: 'white' }}>
+            <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+              <Title level={2} style={{ margin: 0 }}>PROPOSAL</Title>
+              <Text type="secondary">#{viewingProposal.proposalNumber}</Text>
+            </div>
+
+            <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
+              <Col span={12}>
+                <div>
+                  <Text strong>Client:</Text>
+                  <div style={{ marginTop: '8px' }}>
+                    <Text>{viewingProposal.customer.name}</Text>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text strong>Date:</Text>
+                  <div style={{ marginTop: '8px' }}>
+                    <Text>{dayjs(viewingProposal.createdDate).format('MMMM DD, YYYY')}</Text>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text strong>Valid Until:</Text>
+                  <div style={{ marginTop: '8px' }}>
+                    <Text>{dayjs(viewingProposal.validUntil).format('MMMM DD, YYYY')}</Text>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text strong>Status:</Text>
+                  <div style={{ marginTop: '8px' }}>
+                    <Tag color={getStatusColor(viewingProposal.status)}>
+                      {viewingProposal.status.toUpperCase()}
+                    </Tag>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <Divider />
+
+            <div style={{ marginBottom: '20px' }}>
+              <Text strong style={{ fontSize: '16px' }}>Services</Text>
+            </div>
+
+            <Table
+              dataSource={viewingProposal.lines}
+              pagination={false}
+              size="small"
+              rowKey="id"
+              columns={[
+                {
+                  title: 'Description',
+                  dataIndex: 'description',
+                  key: 'description',
+                },
+                {
+                  title: 'Quantity',
+                  dataIndex: 'quantity',
+                  key: 'quantity',
+                  width: 100,
+                  align: 'center' as const,
+                },
+                {
+                  title: 'Unit Price',
+                  dataIndex: 'unitPrice',
+                  key: 'unitPrice',
+                  width: 150,
+                  align: 'right' as const,
+                  render: (price: number) => `₹${price.toLocaleString('en-IN')}`,
+                },
+                {
+                  title: 'Total',
+                  key: 'total',
+                  width: 150,
+                  align: 'right' as const,
+                  render: (_: any, record: any) => 
+                    `₹${(record.quantity * record.unitPrice).toLocaleString('en-IN')}`,
+                },
+              ]}
+            />
+
+            <div style={{ marginTop: '20px', textAlign: 'right' }}>
+              <Title level={3}>
+                Total: ₹{viewingProposal.totalAmount.toLocaleString('en-IN')}
+              </Title>
+            </div>
+
+            {viewingProposal.terms && (
+              <>
+                <Divider />
+                <div>
+                  <Text strong style={{ fontSize: '16px' }}>Terms & Conditions</Text>
+                  <div style={{ marginTop: '12px', whiteSpace: 'pre-wrap' }}>
+                    <Text>{viewingProposal.terms}</Text>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

@@ -35,6 +35,7 @@ import dayjs from 'dayjs';
 import { useAuthStore } from '../store/authStore';
 import { hasPermission } from '../utils/permissions';
 import { employeeTaskService } from '../services/employee-task.service';
+import { employeeService, Employee } from '../services/employee.service';
 import TaskSubmitModal, { SubmitTaskData } from '../components/TaskSubmitModal';
 import TaskApprovalModal, { ApprovalData } from '../components/TaskApprovalModal';
 
@@ -98,6 +99,7 @@ const MyKPIPage: React.FC = () => {
   // Team tasks state (for managers)
   const [teamTasks, setTeamTasks] = useState<DailyTask[]>([]);
   const [teamKPIs, setTeamKPIs] = useState<EmployeeKPI[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   // New modal states for submit/approve
   const [submitModalVisible, setSubmitModalVisible] = useState(false);
@@ -110,6 +112,7 @@ const MyKPIPage: React.FC = () => {
   useEffect(() => {
     fetchMyTasks();
     fetchMyKPI();
+    fetchEmployees();
     if (canViewAllKPI) {
       fetchTeamTasks();
       fetchTeamKPIs();
@@ -144,6 +147,15 @@ const MyKPIPage: React.FC = () => {
       setMyTasks([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const data = await employeeService.getAll();
+      setEmployees(data.filter(emp => emp.status === 'active'));
+    } catch (error) {
+      console.error('Error fetching employees:', error);
     }
   };
 
@@ -232,8 +244,7 @@ const MyKPIPage: React.FC = () => {
       category: 'Development',
       complexity: 'medium',
       estimatedHours: 4,
-      // If admin, allow assigning to team members
-      ...(canViewAllKPI ? { employeeId: user?.id } : {}),
+      employeeId: user?.id, // Default to current user
     });
     setTaskModalVisible(true);
   };
@@ -361,32 +372,43 @@ const MyKPIPage: React.FC = () => {
 
   const handleSubmitTask = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
       setLoading(true);
 
-      // TODO: Replace with actual API call
-      // const values = await form.validateFields();
-      // const taskData = {
-      //   ...values,
-      //   date: values.date.format('YYYY-MM-DD'),
-      //   employeeId: user?.id,
-      //   employeeName: `${user?.firstName} ${user?.lastName}`,
-      // };
+      const taskData = {
+        userId: values.employeeId, // Assign to selected employee
+        title: values.title,
+        description: values.description,
+        date: values.date.format('YYYY-MM-DD'),
+        category: values.category,
+        priority: values.priority || 'medium',
+        hoursSpent: values.hoursSpent || 0,
+        status: 'pending' as const,
+      };
 
       if (selectedTask) {
         // Update existing task
+        await employeeTaskService.updateTask(selectedTask.id, taskData);
         message.success('Task updated successfully');
       } else {
         // Create new task
+        await employeeTaskService.createTask(taskData);
         message.success('Task added successfully');
       }
 
       setTaskModalVisible(false);
+      setSelectedTask(null);
       form.resetFields();
+      
+      // Refresh data
       fetchMyTasks();
       fetchMyKPI();
-    } catch (error) {
-      message.error('Failed to save task');
+      if (canViewAllKPI) {
+        fetchTeamTasks();
+      }
+    } catch (error: any) {
+      console.error('Failed to save task:', error);
+      message.error(error?.response?.data?.message || 'Failed to save task');
     } finally {
       setLoading(false);
     }
@@ -775,24 +797,33 @@ const MyKPIPage: React.FC = () => {
         confirmLoading={loading}
       >
         <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
-          {canViewAllKPI && (
-            <Form.Item
-              name="employeeId"
-              label="Assign To"
-              rules={[{ required: true, message: 'Please select employee' }]}
+          <Form.Item
+            name="employeeId"
+            label="Assign To"
+            rules={[{ required: true, message: 'Please select employee' }]}
+          >
+            <Select 
+              placeholder="Select employee"
+              showSearch
+              filterOption={(input, option) => {
+                const label = typeof option?.children === 'string'
+                  ? option.children
+                  : (React.isValidElement(option?.children) && typeof (option.children as any).props?.children === 'string')
+                    ? (option.children as any).props.children
+                    : '';
+                return label.toLowerCase().includes(input.toLowerCase());
+              }}
             >
-              <Select placeholder="Select team member">
-                <Select.Option value={user?.id}>
-                  {`${user?.firstName} ${user?.lastName}`} (Me)
+              <Select.Option value={user?.id}>
+                {`${user?.firstName} ${user?.lastName}`} (Me)
+              </Select.Option>
+              {employees.map((emp) => (
+                <Select.Option key={emp.id} value={emp.id}>
+                  {emp.fullName} - {emp.designation}
                 </Select.Option>
-                {teamKPIs.map((emp) => (
-                  <Select.Option key={emp.employeeId} value={emp.employeeId}>
-                    {emp.employeeName} - {emp.designation}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          )}
+              ))}
+            </Select>
+          </Form.Item>
 
           <Form.Item
             name="date"

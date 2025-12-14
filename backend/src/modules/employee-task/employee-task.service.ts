@@ -8,10 +8,13 @@ export class EmployeeTaskService {
   constructor(private prisma: PrismaService) {}
 
   async create(user_id: string, company_id: string, dto: CreateEmployeeTaskDto) {
+    // Allow assigning to another user if userId is provided, otherwise use current user
+    const target_user_id = dto.userId || user_id;
+    
     const task = await this.prisma.employee_tasks.create({
       data: {
         id: randomUUID(),
-        user_id,
+        user_id: target_user_id,
         company_id,
         date: new Date(dto.date),
         title: dto.title,

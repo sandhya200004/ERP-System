@@ -198,7 +198,8 @@ const NotificationBell: React.FC = () => {
 
   return (
     <Dropdown
-      overlay={dropdownMenu}
+      menu={{ items: [] }}
+      popupRender={() => dropdownMenu}
       trigger={['click']}
       open={dropdownVisible}
       onOpenChange={handleDropdownVisibleChange}

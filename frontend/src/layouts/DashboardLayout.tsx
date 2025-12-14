@@ -85,13 +85,6 @@ const DashboardLayout: React.FC = () => {
         permission: 'VIEW_INVOICES' as const,
       },
       {
-        key: '/quotes',
-        icon: <FileSearchOutlined />,
-        label: 'Quotes',
-        onClick: () => navigate('/quotes'),
-        permission: 'VIEW_QUOTES' as const,
-      },
-      {
         key: '/payments',
         icon: <DollarOutlined />,
         label: 'Payments',

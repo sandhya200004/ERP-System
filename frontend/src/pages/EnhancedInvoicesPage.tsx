@@ -105,7 +105,7 @@ interface RecurringConfig {
 }
 
 const EnhancedInvoicesPage: React.FC = () => {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
@@ -259,7 +259,7 @@ const EnhancedInvoicesPage: React.FC = () => {
   };
 
   const handleSendInvoice = (invoice: Invoice) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Send Invoice',
       content: `Send invoice ${invoice.invoiceNumber} to ${invoice.customer.email}?`,
       okText: 'Send',
@@ -283,7 +283,7 @@ const EnhancedInvoicesPage: React.FC = () => {
       return;
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: `${action} ${selectedInvoices.length} invoice(s)?`,
       content: `Are you sure you want to ${action.toLowerCase()} the selected invoices?`,
       okText: 'Yes',
@@ -351,7 +351,7 @@ const EnhancedInvoicesPage: React.FC = () => {
       label: 'Cancel Invoice',
       danger: true,
       onClick: () => {
-        Modal.confirm({
+        modal.confirm({
           title: 'Cancel Invoice',
           content: `Are you sure you want to cancel ${invoice.invoiceNumber}?`,
           okText: 'Yes',

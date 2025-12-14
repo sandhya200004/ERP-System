@@ -73,6 +73,7 @@ const PaymentsPage: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [stats, setStats] = useState({ total: 0, totalAmount: 0 });
   const [form] = Form.useForm();
@@ -107,13 +108,27 @@ const PaymentsPage: React.FC = () => {
   const fetchInvoices = async () => {
     try {
       const response = await invoiceService.getAll();
+      console.log('Invoice API response:', response);
+      
+      // Handle paginated response structure
+      const invoiceList = response?.data || response || [];
+      console.log('Invoice list:', invoiceList);
+      console.log('Invoice statuses:', invoiceList.map((inv: any) => ({ id: inv.id, invoiceNumber: inv.invoiceNumber || inv.invoice_number, status: inv.status })));
+      
       // Filter for unpaid or partially paid invoices
-      const unpaidInvoices = response.data.filter(
-        (inv: any) => inv.status === 'sent' || inv.status === 'partially_paid' || inv.status === 'overdue'
+      // Status can be: draft, sent, partially_paid, paid, overdue, void
+      const unpaidInvoices = invoiceList.filter(
+        (inv: any) => {
+          const status = inv.status?.toLowerCase();
+          return status === 'sent' || status === 'partially_paid' || status === 'overdue' || status === 'draft';
+        }
       );
+      console.log('Unpaid invoices:', unpaidInvoices);
+      
       setInvoices(unpaidInvoices);
     } catch (error: any) {
       console.error('Failed to fetch invoices:', error);
+      message.error('Failed to load invoices');
     }
   };
 
@@ -153,6 +168,7 @@ const PaymentsPage: React.FC = () => {
     setSelectedInvoiceId(invoiceId);
     const invoice = invoices.find((inv) => inv.id === invoiceId);
     if (invoice) {
+      setSelectedInvoice(invoice);
       const dueAmount = invoice.totalAmount - (invoice.paidAmount || 0);
       setPaymentAmount(dueAmount);
       form.setFieldsValue({ amount: dueAmount });
@@ -161,12 +177,13 @@ const PaymentsPage: React.FC = () => {
 
   const handleSubmit = async (values: any) => {
     try {
-      if (!selectedInvoiceId) {
+      if (!selectedInvoiceId || !selectedInvoice) {
         message.error('Please select an invoice');
         return;
       }
 
       const paymentData = {
+        customerId: selectedInvoice.customer.id,
         paymentDate: values.paymentDate.toISOString(),
         amount: values.amount,
         paymentMethod: values.paymentMethod,

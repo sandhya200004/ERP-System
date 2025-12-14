@@ -15,6 +15,11 @@ export enum TaskPriority {
 }
 
 export class CreateEmployeeTaskDto {
+  @ApiPropertyOptional({ example: 'uuid', description: 'User ID to assign the task to (defaults to current user)' })
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
   @ApiProperty({ example: '2025-11-14' })
   @IsDateString()
   date: string;

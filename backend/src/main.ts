@@ -15,19 +15,14 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - Allow multiple frontend ports
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-  ];
-  if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL);
-  }
-
+  // CORS - allow frontend dev origins
   app.enableCors({
-    origin: allowedOrigins,
+    origin: [
+      'http://localhost:5173',
+      'http://192.168.1.12:5173',
+      'http://localhost:5174',
+      'http://192.168.1.12:5174',
+    ],
     credentials: true,
   });
 
@@ -47,7 +42,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 TriVerse ERP Backend running on http://localhost:${port}`);

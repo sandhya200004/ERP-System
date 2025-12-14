@@ -97,7 +97,7 @@ export class QuoteService {
           create: processedLines.map((line, index) => ({
             id: randomUUID(),
             line_number: index + 1,
-            item_id: line.itemId,
+            item_id: line.itemId || null,
             description: line.description,
             quantity: line.quantity,
             unit_price: line.unitPrice,

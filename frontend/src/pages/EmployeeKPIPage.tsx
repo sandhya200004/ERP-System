@@ -443,6 +443,7 @@ const EmployeeKPIPage: React.FC = () => {
           dataSource={kpiData}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 
@@ -453,6 +454,7 @@ const EmployeeKPIPage: React.FC = () => {
           dataSource={tasks}
           rowKey="id"
           pagination={false}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

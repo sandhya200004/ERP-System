@@ -16,3 +16,280 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  /* Make tables scrollable on mobile */
+  .ant-table {
+    overflow-x: auto;
+  }
+  
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  /* Stack cards vertically on mobile */
+  .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .ant-col {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  /* Adjust card spacing */
+  .ant-card {
+    margin-bottom: 12px;
+  }
+  
+  /* Make statistics responsive */
+  .ant-statistic-title {
+    font-size: 12px;
+  }
+  
+  .ant-statistic-content {
+    font-size: 20px;
+  }
+  
+  /* Adjust form items */
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+  
+  /* Make modals responsive - full width on mobile */
+  .ant-modal {
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px !important;
+    padding: 0 !important;
+    top: 8px !important;
+  }
+  
+  .ant-modal-content {
+    border-radius: 8px !important;
+  }
+  
+  .ant-modal-body {
+    padding: 16px !important;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+  
+  .ant-modal-header {
+    padding: 12px 16px !important;
+  }
+  
+  .ant-modal-footer {
+    padding: 10px 16px !important;
+  }
+  
+  /* Drawer full width on mobile */
+  .ant-drawer-content-wrapper {
+    max-width: 100% !important;
+  }
+  
+  /* Adjust buttons */
+  .ant-btn-lg {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+  
+  .ant-btn {
+    padding: 4px 12px;
+    font-size: 14px;
+  }
+  
+  /* Hide less important columns on mobile */
+  .ant-table-cell.mobile-hide {
+    display: none;
+  }
+  
+  /* Adjust typography */
+  h1.ant-typography, .ant-typography h1 {
+    font-size: 24px !important;
+  }
+  
+  h2.ant-typography, .ant-typography h2 {
+    font-size: 20px !important;
+  }
+  
+  h3.ant-typography, .ant-typography h3 {
+    font-size: 18px !important;
+  }
+  
+  h4.ant-typography, .ant-typography h4 {
+    font-size: 16px !important;
+  }
+  
+  /* Form layout adjustments */
+  .ant-form-item-label {
+    padding-bottom: 4px;
+  }
+  
+  /* Input fields */
+  .ant-input,
+  .ant-input-number,
+  .ant-select-selector,
+  .ant-picker {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+  
+  /* Space component */
+  .ant-space {
+    gap: 8px !important;
+  }
+  
+  .ant-space-item {
+    margin-right: 8px !important;
+  }
+  
+  /* Card headers */
+  .ant-card-head {
+    padding: 12px 16px;
+    min-height: auto;
+  }
+  
+  .ant-card-head-title {
+    padding: 8px 0;
+    font-size: 16px;
+  }
+  
+  .ant-card-body {
+    padding: 16px;
+  }
+  
+  /* Tabs */
+  .ant-tabs-nav {
+    margin-bottom: 16px;
+  }
+  
+  .ant-tabs-tab {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  /* Select dropdowns */
+  .ant-select-dropdown {
+    max-width: calc(100vw - 32px);
+  }
+  
+  /* Date picker */
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 32px);
+  }
+  
+  /* Table actions */
+  .ant-table-cell .ant-space {
+    flex-wrap: wrap;
+  }
+  
+  /* Pagination */
+  .ant-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .ant-pagination-item,
+  .ant-pagination-prev,
+  .ant-pagination-next {
+    margin: 4px 2px;
+  }
+  
+  /* Descriptions */
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content {
+    padding: 8px 12px;
+  }
+  
+  /* Steps */
+  .ant-steps-item-title {
+    font-size: 14px;
+  }
+  
+  .ant-steps-item-description {
+    font-size: 12px;
+  }
+  
+  /* Timeline */
+  .ant-timeline-item-content {
+    font-size: 14px;
+  }
+  
+  /* List */
+  .ant-list-item {
+    padding: 12px 16px;
+  }
+  
+  /* Prevent horizontal scroll on body */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Fix for overlapping form fields */
+  .ant-form-item-control-input {
+    min-height: auto;
+  }
+  
+  .ant-form-item-explain {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small devices */
+  .ant-statistic-content {
+    font-size: 18px;
+  }
+  
+  .ant-card-head-title {
+    font-size: 14px;
+  }
+  
+  .ant-btn {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  
+  /* Even smaller modals on very small screens */
+  .ant-modal-body {
+    padding: 12px !important;
+  }
+  
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
+  
+  /* Compact table on very small screens */
+  .ant-table {
+    font-size: 13px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px;
+  }
+}
+
+/* Landscape orientation fixes */
+@media (max-height: 600px) and (orientation: landscape) {
+  .ant-modal-body {
+    max-height: calc(100vh - 100px);
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .ant-modal {
+    max-width: 90% !important;
+  }
+  
+  .ant-card-body {
+    padding: 20px;
+  }
+}

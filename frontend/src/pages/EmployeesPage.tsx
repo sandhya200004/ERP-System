@@ -300,6 +300,7 @@ const EmployeesPage: React.FC = () => {
           dataSource={filteredEmployees}
           loading={loading}
           rowKey="id"
+          scroll={{ x: 'max-content' }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

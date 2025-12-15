@@ -257,6 +257,7 @@ const ReportsPage: React.FC = () => {
                       }))}
                       columns={plColumns}
                       pagination={false}
+                      scroll={{ x: 'max-content' }}
                     />
                   </Card>
                 </>
@@ -276,6 +277,7 @@ const ReportsPage: React.FC = () => {
                   }))}
                   columns={plColumns}
                   pagination={false}
+                  scroll={{ x: 'max-content' }}
                 />
               )}
             </Card>
@@ -293,6 +295,7 @@ const ReportsPage: React.FC = () => {
                   }))}
                   columns={plColumns}
                   pagination={false}
+                  scroll={{ x: 'max-content' }}
                 />
               )}
             </Card>
@@ -317,6 +320,7 @@ const ReportsPage: React.FC = () => {
                       { title: 'Amount', dataIndex: 'amount', key: 'amount' },
                     ]}
                     pagination={false}
+                    scroll={{ x: 'max-content' }}
                     style={{ marginTop: 16 }}
                   />
                 </>

@@ -1,19 +1,19 @@
--- Add KPI scoring fields to tasks table
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimated_hours FLOAT;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS actual_hours FLOAT;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS started_at TIMESTAMP;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS complexity VARCHAR(20) DEFAULT 'medium';
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS proofs JSONB DEFAULT '[]';
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS auto_checks JSONB DEFAULT '{}';
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS required_checks INTEGER DEFAULT 0;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS peer_reviews JSONB DEFAULT '[]';
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS quality_score FLOAT;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS penalty_pct FLOAT DEFAULT 0;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS task_score FLOAT;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS manager_approved BOOLEAN DEFAULT false;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS manager_approved_at TIMESTAMP;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assigned_to UUID;
+-- Add KPI scoring fields to employee_tasks table
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS estimated_hours FLOAT;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS actual_hours FLOAT;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS started_at TIMESTAMP;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS complexity VARCHAR(20) DEFAULT 'medium';
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS proofs JSONB DEFAULT '[]';
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS auto_checks JSONB DEFAULT '{}';
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS required_checks INTEGER DEFAULT 0;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS peer_reviews JSONB DEFAULT '[]';
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS quality_score FLOAT;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS penalty_pct FLOAT DEFAULT 0;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS task_score FLOAT;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS manager_approved BOOLEAN DEFAULT false;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS manager_approved_at TIMESTAMP;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS assigned_to UUID;
 
 -- Create audit log table
 CREATE TABLE IF NOT EXISTS task_audit_log (
@@ -24,11 +24,11 @@ CREATE TABLE IF NOT EXISTS task_audit_log (
   old_value TEXT,
   new_value TEXT,
   timestamp TIMESTAMP DEFAULT NOW(),
-  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+  FOREIGN KEY (task_id) REFERENCES employee_tasks(id) ON DELETE CASCADE
 );
 
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_task_audit_log_task_id ON task_audit_log(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_audit_log_user_id ON task_audit_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks(completed_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON employee_tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON employee_tasks(completed_at);

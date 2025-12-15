@@ -113,18 +113,27 @@ const PaymentsPage: React.FC = () => {
       // Handle paginated response structure
       const invoiceList = response?.data || response || [];
       console.log('Invoice list:', invoiceList);
-      console.log('Invoice statuses:', invoiceList.map((inv: any) => ({ id: inv.id, invoiceNumber: inv.invoiceNumber || inv.invoice_number, status: inv.status })));
       
-      // Filter for unpaid or partially paid invoices
-      // Status can be: draft, sent, partially_paid, paid, overdue, void
-      const unpaidInvoices = invoiceList.filter(
-        (inv: any) => {
+      // Map and filter for unpaid or partially paid invoices
+      const unpaidInvoices = invoiceList
+        .filter((inv: any) => {
           const status = inv.status?.toLowerCase();
           return status === 'sent' || status === 'partially_paid' || status === 'overdue' || status === 'draft';
-        }
-      );
-      console.log('Unpaid invoices:', unpaidInvoices);
+        })
+        .map((inv: any) => ({
+          id: inv.id,
+          invoiceNumber: inv.invoice_number || inv.invoiceNumber,
+          totalAmount: inv.total_amount || inv.totalAmount || inv.total || 0,
+          paidAmount: inv.paid_amount || inv.paidAmount || 0,
+          dueAmount: inv.amount_due || inv.amountDue || inv.dueAmount || 0,
+          status: inv.status,
+          customer: {
+            id: inv.customer_id || inv.customerId || inv.customer?.id,
+            name: inv.customer?.name || inv.customerName || 'Unknown'
+          }
+        }));
       
+      console.log('Mapped unpaid invoices:', unpaidInvoices);
       setInvoices(unpaidInvoices);
     } catch (error: any) {
       console.error('Failed to fetch invoices:', error);
@@ -371,7 +380,9 @@ const PaymentsPage: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
-        width={700}
+        width="90%"
+        style={{ maxWidth: 700 }}
+        centered
         okText="Record Payment"
       >
         <Alert
@@ -491,7 +502,9 @@ const PaymentsPage: React.FC = () => {
             Close
           </Button>,
         ]}
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         {selectedPayment && (
           <Descriptions bordered column={1}>

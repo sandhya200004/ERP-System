@@ -245,15 +245,14 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
   };
 
   const handleDownloadPDF = async () => {
-    const proposalElement = document.getElementById('proposal-preview');
-    if (!proposalElement) {
-      message.error('Proposal preview not found');
-      return;
-    }
-
     try {
-      message.loading('Generating PDF...', 0);
-      
+      message.loading({ content: 'Generating PDF...', key: 'pdf' });
+      const proposalElement = document.getElementById('proposal-preview');
+      if (!proposalElement) {
+        message.error({ content: 'Proposal preview not found', key: 'pdf' });
+        return;
+      }
+
       const canvas = await html2canvas(proposalElement, {
         scale: 2,
         useCORS: true,
@@ -283,8 +282,13 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
       }
       
       message.destroy();
-      pdf.save(`proposal-${proposalData?.proposalNumber || 'draft'}-${dayjs().format('YYYYMMDD')}.pdf`);
-      message.success('PDF downloaded successfully!');
+      
+      // Open PDF in new tab for preview instead of auto-download
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
+      
+      message.success({ content: 'PDF opened in new tab for preview', key: 'pdf' });
     } catch (error: any) {
       message.destroy();
       console.error('PDF generation error:', error);
@@ -321,7 +325,10 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
           message.success('Proposal created successfully!');
         }
         
-        onSuccess();
+        // Refresh proposals list
+        if (onSuccess) {
+          onSuccess();
+        }
         handleClose();
         return;
       }
@@ -461,7 +468,9 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
       <Modal
         open={visible}
         onCancel={() => setPreviewMode(false)}
-        width={900}
+        width="90%"
+        style={{ maxWidth: 900, top: 20 }}
+        centered
         footer={[
           <Button key="back" onClick={() => setPreviewMode(false)}>
             Back to Edit
@@ -476,7 +485,6 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
             Save Proposal
           </Button>
         ]}
-        style={{ top: 20 }}
       >
         <div id="proposal-preview" style={{ padding: '40px', background: '#fff' }}>
           {/* Header */}
@@ -604,7 +612,9 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
       title={editingProposal ? 'Edit Proposal' : 'Create Proposal'}
       open={visible}
       onCancel={handleClose}
-      width={1200}
+      width="90%"
+      style={{ maxWidth: 1200 }}
+      centered
       footer={[
         <Button key="cancel" onClick={handleClose}>
           Cancel
@@ -937,7 +947,9 @@ const ProposalsPage: React.FC = () => {
         title="Proposal Preview"
         open={!!viewingProposal}
         onCancel={() => setViewingProposal(null)}
-        width={900}
+        width="90%"
+        style={{ maxWidth: 900 }}
+        centered
         footer={[
           <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
             Print / Save as PDF

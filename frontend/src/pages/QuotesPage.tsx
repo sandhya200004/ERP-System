@@ -157,6 +157,7 @@ const QuotesPage: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 
@@ -165,7 +166,9 @@ const QuotesPage: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="customerId" label="Customer" rules={[{ required: true }]}>

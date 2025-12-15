@@ -287,7 +287,6 @@ const AttendancePage: React.FC = () => {
       await fetchAttendanceHistory();
       
       // Calculate if late
-      const now = dayjs();
       const checkInTime = dayjs(`${result.attendance.date} ${result.attendance.checkIn}`);
       const officeStart = dayjs(`${result.attendance.date} ${OFFICE_START_TIME}`);
       const minutesLate = checkInTime.diff(officeStart, 'minute');
@@ -825,7 +824,8 @@ const AttendancePage: React.FC = () => {
           dataSource={attendanceHistory}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

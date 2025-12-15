@@ -167,7 +167,8 @@ const ItemsPage: React.FC = () => {
           dataSource={items}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 
@@ -176,7 +177,9 @@ const ItemsPage: React.FC = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item

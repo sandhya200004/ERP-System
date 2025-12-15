@@ -1,15 +1,12 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api/v1';
-
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -21,12 +18,10 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Clear tokens and redirect to login
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';

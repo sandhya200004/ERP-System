@@ -38,7 +38,7 @@ CREATE TYPE "journal_entry_status" AS ENUM ('draft', 'posted', 'voided');
 CREATE TYPE "audit_action" AS ENUM ('create', 'update', 'delete', 'status_change', 'login', 'logout');
 
 -- CreateEnum
-CREATE TYPE "task_status" AS ENUM ('pending', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE "task_status" AS ENUM ('pending', 'in_progress', 'completed', 'cancelled', 'submitted', 'approved', 'rejected');
 
 -- CreateEnum
 CREATE TYPE "task_priority" AS ENUM ('low', 'medium', 'high');

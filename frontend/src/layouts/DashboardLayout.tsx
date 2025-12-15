@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, App } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, App, Drawer } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -27,9 +27,25 @@ const { Text } = Typography;
 const DashboardLayout: React.FC = () => {
   const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { company, logout } = useAuthStore();
+
+  // Detect mobile screen
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth < 768) {
+        setCollapsed(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -174,104 +190,150 @@ const DashboardLayout: React.FC = () => {
     return allItems;
   }, [navigate]);
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={220} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 24px',
-            borderBottom: '1px solid #f0f0f0',
-          }}
-        >
-          {!collapsed ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img 
-                src="/triverse-logo.png" 
-                alt="TriVerse Solutions" 
-                style={{ 
-                  height: 40, 
-                  width: 'auto' 
-                }} 
-              />
-              <div>
-                <Text strong style={{ fontSize: 16, display: 'block', lineHeight: '20px', color: '#2c3e7d' }}>
-                  TriVerse
-                </Text>
-                <Text type="secondary" style={{ fontSize: 11, lineHeight: '14px' }}>
-                  ERP/CRM System
-                </Text>
-              </div>
-            </div>
-          ) : (
+  const handleMenuClick = () => {
+    if (isMobile) {
+      setMobileDrawerVisible(false);
+    }
+  };
+
+  const siderContent = (
+    <>
+      <div
+        style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+          padding: collapsed && !isMobile ? 0 : '0 24px',
+          borderBottom: '1px solid #f0f0f0',
+        }}
+      >
+        {!collapsed || isMobile ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img 
               src="/triverse-logo.png" 
-              alt="TriVerse" 
+              alt="TriVerse Solutions" 
               style={{ 
                 height: 40, 
                 width: 'auto' 
               }} 
             />
-          )}
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          style={{ borderRight: 0 }}
-        />
-      </Sider>
+            <div>
+              <Text strong style={{ fontSize: 16, display: 'block', lineHeight: '20px', color: '#2c3e7d' }}>
+                TriVerse
+              </Text>
+              <Text type="secondary" style={{ fontSize: 11, lineHeight: '14px' }}>
+                ERP/CRM System
+              </Text>
+            </div>
+          </div>
+        ) : (
+          <img 
+            src="/triverse-logo.png" 
+            alt="TriVerse" 
+            style={{ 
+              height: 40, 
+              width: 'auto' 
+            }} 
+          />
+        )}
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        items={menuItems}
+        style={{ borderRight: 0 }}
+        onClick={handleMenuClick}
+      />
+    </>
+  );
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      {/* Desktop Sider */}
+      {!isMobile && (
+        <Sider 
+          trigger={null} 
+          collapsible 
+          collapsed={collapsed} 
+          width={220} 
+          theme="light" 
+          style={{ borderRight: '1px solid #f0f0f0' }}
+        >
+          {siderContent}
+        </Sider>
+      )}
+
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          onClose={() => setMobileDrawerVisible(false)}
+          open={mobileDrawerVisible}
+          closable={false}
+          width={280}
+          styles={{ body: { padding: 0 } }}
+        >
+          {siderContent}
+        </Drawer>
+      )}
 
       <Layout>
         <Header style={{ 
-          padding: '0 24px', 
+          padding: isMobile ? '0 12px' : '0 24px', 
           background: '#fff', 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
           borderBottom: '1px solid #f0f0f0',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px' }}>
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => isMobile ? setMobileDrawerVisible(true) : setCollapsed(!collapsed)}
               style={{ fontSize: 16 }}
             />
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>English</Text>
-              <Text type="secondary" style={{ margin: '0 8px' }}>|</Text>
-              <Text strong style={{ fontSize: 13 }}>{company?.name || 'USA Company'}</Text>
-            </div>
+            {!isMobile && (
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>English</Text>
+                <Text type="secondary" style={{ margin: '0 8px' }}>|</Text>
+                <Text strong style={{ fontSize: 13 }}>{company?.name || 'USA Company'}</Text>
+              </div>
+            )}
           </div>
 
-          <Space size="large">
-            <Button 
-              type="primary" 
-              size="large"
-              style={{ 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                border: 'none',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                fontWeight: 600,
-                height: 42,
-                padding: '0 24px'
-              }}
-              onClick={() => message.info('Contact us for custom features: sales@triverse.com')}
-            >
-              Request Custom Features
-            </Button>
+          <Space size={isMobile ? "small" : "large"}>
+            {!isMobile && (
+              <Button 
+                type="primary" 
+                size="large"
+                style={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  fontWeight: 600,
+                  height: 42,
+                  padding: '0 24px'
+                }}
+                onClick={() => message.info('Contact us for custom features: sales@triverse.com')}
+              >
+                Request Custom Features
+              </Button>
+            )}
             <NotificationBell />
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Avatar size="large" icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
+              <Avatar size={isMobile ? "default" : "large"} icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
             </Dropdown>
           </Space>
         </Header>
 
-        <Content style={{ margin: '24px', padding: 24, background: '#f0f2f5', minHeight: 280 }}>
+        <Content style={{ 
+          margin: isMobile ? '12px' : '24px', 
+          padding: isMobile ? 12 : 24, 
+          background: '#f0f2f5', 
+          minHeight: 280 
+        }}>
           <Outlet />
         </Content>
       </Layout>

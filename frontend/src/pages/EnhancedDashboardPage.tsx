@@ -657,6 +657,7 @@ const EnhancedDashboardPage: React.FC = () => {
               rowKey="id"
               pagination={false}
               size="small"
+              scroll={{ x: 'max-content' }}
               columns={[
                 {
                   title: 'Invoice #',

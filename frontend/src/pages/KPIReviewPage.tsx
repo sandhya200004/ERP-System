@@ -387,6 +387,7 @@ const KPIReviewPage: React.FC = () => {
           dataSource={filteredKPIs}
           loading={loading}
           rowKey="employeeName"
+          scroll={{ x: 'max-content' }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

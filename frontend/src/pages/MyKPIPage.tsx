@@ -382,7 +382,8 @@ const MyKPIPage: React.FC = () => {
         date: values.date.format('YYYY-MM-DD'),
         category: values.category,
         priority: values.priority || 'medium',
-        hoursSpent: values.hoursSpent || 0,
+        hoursSpent: Number(values.hoursSpent) || 0,
+        estimatedHours: Number(values.estimatedHours) || 0,
         status: 'pending' as const,
       };
 
@@ -400,12 +401,12 @@ const MyKPIPage: React.FC = () => {
       setSelectedTask(null);
       form.resetFields();
       
-      // Refresh data
+      // Refresh only task lists to prevent loop
       fetchMyTasks();
-      fetchMyKPI();
       if (canViewAllKPI) {
         fetchTeamTasks();
       }
+      // KPI will be refreshed on next page load or manual refresh
     } catch (error: any) {
       console.error('Failed to save task:', error);
       message.error(error?.response?.data?.message || 'Failed to save task');
@@ -575,7 +576,7 @@ const MyKPIPage: React.FC = () => {
     },
   ];
 
-  const teamKPIColumns = [
+  const kpiColumns = [
     {
       title: 'Employee',
       dataIndex: 'employeeName',
@@ -744,6 +745,7 @@ const MyKPIPage: React.FC = () => {
                       rowKey="id"
                       loading={loading}
                       pagination={{ pageSize: 10 }}
+                      scroll={{ x: 'max-content' }}
                     />
                   ),
                 },
@@ -754,11 +756,12 @@ const MyKPIPage: React.FC = () => {
                         label: 'Team Performance',
                         children: (
                           <Table
-                            columns={teamKPIColumns}
+                            columns={kpiColumns}
                             dataSource={teamKPIs}
                             rowKey="employeeId"
                             loading={loading}
                             pagination={{ pageSize: 10 }}
+                            scroll={{ x: 'max-content' }}
                           />
                         ),
                       },
@@ -772,6 +775,7 @@ const MyKPIPage: React.FC = () => {
                             rowKey="id"
                             loading={loading}
                             pagination={{ pageSize: 10 }}
+                            scroll={{ x: 'max-content' }}
                           />
                         ),
                       },

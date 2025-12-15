@@ -387,7 +387,9 @@ const ExpensesPage: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={handleSubmit}
-        width={700}
+        width="90%"
+        style={{ maxWidth: 700 }}
+        centered
         okText={editingExpense ? 'Update' : 'Add'}
       >
         <Form form={form} layout="vertical">

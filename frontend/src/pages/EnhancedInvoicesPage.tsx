@@ -728,7 +728,8 @@ const EnhancedInvoicesPage: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={720}
+        width="90%"
+        style={{ maxWidth: 720 }}
         onClose={() => setIsDrawerVisible(false)}
         open={isDrawerVisible}
         extra={
@@ -983,6 +984,9 @@ const EnhancedInvoicesPage: React.FC = () => {
         onOk={handleSendReminder}
         onCancel={() => setIsReminderModalVisible(false)}
         okText="Send Reminder"
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           <Text>Send a payment reminder to:</Text>
@@ -1000,6 +1004,9 @@ const EnhancedInvoicesPage: React.FC = () => {
         title="Payment Link"
         open={isPaymentLinkModalVisible}
         onCancel={() => setIsPaymentLinkModalVisible(false)}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
         footer={[
           <Button key="close" onClick={() => setIsPaymentLinkModalVisible(false)}>
             Close
@@ -1038,6 +1045,9 @@ const EnhancedInvoicesPage: React.FC = () => {
           message.success('Recurring invoice configured!');
           setIsRecurringModalVisible(false);
         }}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         <Form layout="vertical">
           <Form.Item label="Frequency" name="frequency">

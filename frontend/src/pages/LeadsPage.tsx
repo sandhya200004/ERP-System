@@ -98,7 +98,7 @@ const LeadsPage: React.FC = () => {
           <Title level={2} style={{ margin: 0 }}>Leads</Title>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Add Lead</Button>
         </div>
-        <Table columns={columns} dataSource={leads} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
+        <Table columns={columns} dataSource={leads} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
       </Card>
 
       <Modal
@@ -106,7 +106,9 @@ const LeadsPage: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>

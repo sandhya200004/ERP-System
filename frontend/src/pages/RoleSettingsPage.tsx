@@ -307,6 +307,7 @@ const RoleSettingsPage: React.FC = () => {
               dataSource={roles}
               rowKey="id"
               pagination={false}
+              scroll={{ x: 'max-content' }}
               loading={loading}
             />
           </Card>
@@ -357,7 +358,9 @@ const RoleSettingsPage: React.FC = () => {
         title={`Edit Permissions: ${selectedRole?.name}`}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
-        width={800}
+        width="90%"
+        style={{ maxWidth: 800 }}
+        centered
         footer={[
           <Button key="cancel" onClick={() => setModalVisible(false)}>
             Cancel
@@ -439,6 +442,9 @@ const RoleSettingsPage: React.FC = () => {
           form.resetFields();
         }}
         onOk={() => form.submit()}
+        width="90%"
+        style={{ maxWidth: 600 }}
+        centered
         confirmLoading={loading}
       >
         <Form form={form} layout="vertical" onFinish={handleCreatePermission}>

@@ -13,7 +13,6 @@ ALTER TABLE employee_tasks
   ADD COLUMN IF NOT EXISTS actual_hours DECIMAL(5,2),
   ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
   ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS complexity VARCHAR(20) DEFAULT 'medium',
   ADD COLUMN IF NOT EXISTS deadline TIMESTAMP,
   ADD COLUMN IF NOT EXISTS proofs JSONB DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS auto_checks JSONB DEFAULT '[]'::jsonb,
@@ -32,11 +31,6 @@ ALTER TABLE employee_tasks
   ADD CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
   ADD CONSTRAINT fk_manager_id FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL;
 
--- Update task_status enum to include new states
-ALTER TYPE task_status ADD VALUE IF NOT EXISTS 'submitted';
-ALTER TYPE task_status ADD VALUE IF NOT EXISTS 'approved';
-ALTER TYPE task_status ADD VALUE IF NOT EXISTS 'rejected';
-
 -- Add complexity enum
 DO $$ BEGIN
   CREATE TYPE task_complexity AS ENUM ('trivial', 'small', 'medium', 'complex', 'critical');
@@ -44,8 +38,9 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
-ALTER TABLE employee_tasks 
-  ALTER COLUMN complexity TYPE task_complexity USING complexity::task_complexity;
+-- Drop the complexity column if it exists and recreate with proper type
+ALTER TABLE employee_tasks DROP COLUMN IF EXISTS complexity;
+ALTER TABLE employee_tasks ADD COLUMN complexity task_complexity DEFAULT 'medium';
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON employee_tasks(assigned_to);
@@ -112,13 +107,6 @@ CREATE TABLE IF NOT EXISTS role_kpi_configs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Insert default configurations for all roles
-INSERT INTO role_kpi_configs (role, company_id) 
-SELECT DISTINCT 
-  unnest(enum_range(NULL::user_role_type))::VARCHAR,
-  NULL
-ON CONFLICT (role) DO NOTHING;
 
 -- =====================================================
 -- 5. TASK AUDIT LOG TABLE
@@ -256,9 +244,9 @@ SELECT
   COUNT(et.id) as total_tasks,
   COUNT(et.id) FILTER (WHERE et.status = 'completed') as completed_tasks,
   COUNT(et.id) FILTER (WHERE et.status = 'approved') as approved_tasks,
-  ROUND(AVG(et.task_score), 2) as avg_task_score,
-  ROUND(AVG(et.quality_score), 2) as avg_quality_score,
-  ROUND(AVG(et.penalty_pct), 2) as avg_penalty,
+  ROUND(AVG(et.task_score)::NUMERIC, 2) as avg_task_score,
+  ROUND(AVG(et.quality_score)::NUMERIC, 2) as avg_quality_score,
+  ROUND(AVG(et.penalty_pct)::NUMERIC, 2) as avg_penalty,
   SUM(et.estimated_hours) as total_estimated_hours,
   SUM(et.actual_hours) as total_actual_hours,
   COUNT(et.id) FILTER (WHERE et.completed_at <= et.deadline) as on_time_completions,

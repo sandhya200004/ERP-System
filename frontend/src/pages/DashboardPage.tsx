@@ -7,6 +7,7 @@ import {
 import { customerService } from '../services/customer.service';
 import { itemService } from '../services/item.service';
 import { invoiceService } from '../services/invoice.service';
+import { quoteService } from '../services/quote.service';
 
 const { Title, Text } = Typography;
 
@@ -45,15 +46,17 @@ const DashboardPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [customerStats, itemStats, invoiceStats, invoicesData] = await Promise.all([
+      const [customerStats, itemStats, invoiceStats, invoicesData, quotesData] = await Promise.all([
         customerService.getStats(),
         itemService.getStats(),
         invoiceService.getStats(),
         invoiceService.getAll(),
+        quoteService.getAll().catch(() => []), // Handle if quotes endpoint fails
       ]);
 
       // Ensure invoicesData is an array
       const invoices = Array.isArray(invoicesData) ? invoicesData : [];
+      const quotes = Array.isArray(quotesData) ? quotesData : [];
 
       // Calculate status breakdowns
       const invoicesByStatus: { [key: string]: number } = {
@@ -67,10 +70,9 @@ const DashboardPage: React.FC = () => {
 
       const quotesByStatus: { [key: string]: number } = {
         draft: 0,
-        pending: 0,
         sent: 0,
-        declined: 0,
         accepted: 0,
+        rejected: 0,
         expired: 0,
       };
 
@@ -86,6 +88,14 @@ const DashboardPage: React.FC = () => {
         }
       });
 
+      // Count quotes by status
+      quotes.forEach((quote: any) => {
+        const status = quote.status?.toLowerCase();
+        if (quotesByStatus[status] !== undefined) {
+          quotesByStatus[status]++;
+        }
+      });
+
       setStats({
         totalCustomers: customerStats.total || 0,
         totalItems: itemStats.total || 0,
@@ -94,7 +104,7 @@ const DashboardPage: React.FC = () => {
         invoicesByStatus,
         quotesByStatus,
         recentInvoices: invoices.slice(0, 5),
-        recentQuotes: [],
+        recentQuotes: quotes.slice(0, 5),
         customerGrowth: 30,
         unpaidAmount,
       });

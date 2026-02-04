@@ -30,6 +30,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { useAuthStore } from '../store/authStore';
 import { attendanceService } from '../services/attendance.service';
+import EmployeeBadgeModal from '../components/EmployeeBadgeModal';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -58,7 +59,8 @@ const AttendancePage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  useAuthStore();
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const { user } = useAuthStore();
 
   // Office Location (CodeServeTech Solutions)
   // From Google Maps embed: 18.73805058239819, 73.66970757550314
@@ -246,6 +248,13 @@ const AttendancePage: React.FC = () => {
 
   const handleCheckIn = async () => {
     try {
+      // Show badge verification modal first
+      setShowBadgeModal(true);
+      
+      // Wait 2 seconds for face verification
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setShowBadgeModal(false);
+      
       // First verify location
       setCheckingLocation(true);
       const locationResult = await verifyLocation();
@@ -333,6 +342,13 @@ const AttendancePage: React.FC = () => {
     }
 
     try {
+      // Show badge verification modal first
+      setShowBadgeModal(true);
+      
+      // Wait 2 seconds for face verification
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setShowBadgeModal(false);
+      
       // Verify location for checkout as well
       setCheckingLocation(true);
       const locationResult = await verifyLocation();
@@ -507,7 +523,7 @@ const AttendancePage: React.FC = () => {
   const isWithinOfficeRange = distanceFromOffice !== null && distanceFromOffice <= MAX_DISTANCE_METERS;
 
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Title level={2}>
         <ClockCircleOutlined style={{ marginRight: 12 }} />
         Attendance System
@@ -828,6 +844,17 @@ const AttendancePage: React.FC = () => {
           scroll={{ x: 'max-content' }}
         />
       </Card>
+
+      {/* Employee Badge Verification Modal */}
+      <EmployeeBadgeModal
+        visible={showBadgeModal}
+        onClose={() => setShowBadgeModal(false)}
+        employeeName={user ? `${user.firstName} ${user.lastName}` : 'Employee'}
+        employeeTitle={typeof user?.role === 'string' ? user.role : (user?.role as any)?.name || 'Employee'}
+        employeeId={user?.employeeId || 'N/A'}
+        enableWebcam={true}
+        title="Identity Verification"
+      />
     </div>
   );
 };

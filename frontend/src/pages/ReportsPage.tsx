@@ -158,7 +158,7 @@ const ReportsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Title level={2}>Reports & Analytics</Title>
 
       <Card style={{ marginBottom: 16 }}>

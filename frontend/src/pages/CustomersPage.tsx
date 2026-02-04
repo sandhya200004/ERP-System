@@ -151,7 +151,7 @@ const CustomersPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Title level={2}>Customers</Title>

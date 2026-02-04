@@ -144,8 +144,8 @@ export class AuthService {
       },
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(result.user.id, result.company.id);
+    // Generate tokens (register doesn't have employee profile yet, use default values)
+    const tokens = await this.generateTokens(result.user.id, result.company.id, '', 'ADMIN');
 
     return {
       ...tokens,
@@ -155,6 +155,7 @@ export class AuthService {
         firstName: result.user.first_name,
         lastName: result.user.last_name,
         status: result.user.status,
+        role: 'ADMIN',
       },
       company: {
         id: result.company.id,
@@ -164,24 +165,29 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResponseDto> {
-    // Find user with their roles, company, and employee profile
-    const user = await this.prisma.users.findUnique({
-      where: { email: dto.email },
+    // Find user by employee_id through employee_profiles
+    const employeeProfile = await this.prisma.employee_profiles.findUnique({
+      where: { employee_id: dto.employeeId },
       include: {
-        user_roles: {
+        users: {
           include: {
-            companies: true,
-            roles: true,
+            user_roles: {
+              include: {
+                companies: true,
+                roles: true,
+              },
+              take: 1,
+            },
           },
-          take: 1, // Get first company for initial login
         },
-        employee_profiles: true, // Include employee profile
       },
     });
 
-    if (!user) {
+    if (!employeeProfile || !employeeProfile.users) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    const user = employeeProfile.users;
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
@@ -206,6 +212,9 @@ export class AuthService {
       throw new UnauthorizedException('No company assigned to user');
     }
 
+    // Get role name and normalize to uppercase for RBAC
+    const roleName = (user.user_roles[0]?.roles?.name || 'EMPLOYEE').toUpperCase();
+
     // Log the login
     await this.audit.log({
       action: 'login' as any,
@@ -215,8 +224,8 @@ export class AuthService {
       companyId: primaryCompany.id,
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, primaryCompany.id);
+    // Generate tokens with employee_id and role
+    const tokens = await this.generateTokens(user.id, primaryCompany.id, employeeProfile.employee_id, roleName);
 
     return {
       ...tokens,
@@ -226,11 +235,10 @@ export class AuthService {
         firstName: user.first_name,
         lastName: user.last_name,
         status: user.status,
-        // Include employee profile data
-        role: user.employee_profiles?.role,
-        employeeId: user.employee_profiles?.employee_id,
-        designation: user.employee_profiles?.designation,
-        department: user.employee_profiles?.department,
+        role: roleName,
+        employeeId: employeeProfile.employee_id,
+        designation: employeeProfile.designation,
+        department: employeeProfile.department,
       },
       company: {
         id: primaryCompany.id,
@@ -344,8 +352,15 @@ export class AuthService {
   private async generateTokens(
     user_id: string,
     companyId: string,
+    employeeId: string,
+    role: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const payload = { sub: user_id, company_id: companyId };
+    const payload = { 
+      sub: user_id, 
+      company_id: companyId,
+      employee_id: employeeId,
+      role: role,
+    };
 
     // Generate access token
     const accessToken = this.jwtService.sign(payload, {

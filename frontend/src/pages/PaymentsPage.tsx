@@ -97,8 +97,27 @@ const PaymentsPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await paymentService.getAll();
-      setPayments(response.data);
+      // Transform snake_case to camelCase for frontend compatibility
+      const transformedPayments = (response.data || []).map((payment: any) => ({
+        id: payment.id,
+        paymentNumber: payment.payment_number || payment.paymentNumber,
+        paymentDate: payment.payment_date || payment.paymentDate,
+        amount: payment.amount,
+        paymentMethod: payment.payment_method || payment.paymentMethod,
+        reference: payment.reference_number || payment.reference,
+        notes: payment.notes,
+        status: payment.status,
+        invoice: payment.payment_applications?.[0]?.invoices ? {
+          id: payment.payment_applications[0].invoices.id,
+          invoiceNumber: payment.payment_applications[0].invoices.invoice_number,
+          customer: {
+            name: payment.customers?.business_name || payment.customers?.name || 'Unknown Customer'
+          }
+        } : undefined
+      }));
+      setPayments(transformedPayments as Payment[]);
     } catch (error: any) {
+      console.error('Failed to fetch payments:', error);
       message.error(error.response?.data?.message || 'Failed to fetch payments');
     } finally {
       setLoading(false);
@@ -185,17 +204,19 @@ const PaymentsPage: React.FC = () => {
   };
 
   const handleSubmit = async (values: any) => {
+    let paymentData: any;
     try {
       if (!selectedInvoiceId || !selectedInvoice) {
         message.error('Please select an invoice');
         return;
       }
 
-      const paymentData = {
+      paymentData = {
         customerId: selectedInvoice.customer.id,
         paymentDate: values.paymentDate.toISOString(),
         amount: values.amount,
         paymentMethod: values.paymentMethod,
+        currencyCode: 'USD',
         reference: values.reference || '',
         notes: values.notes || '',
         applications: [
@@ -214,7 +235,16 @@ const PaymentsPage: React.FC = () => {
       fetchStats();
       form.resetFields();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Failed to record payment');
+      const errorData = error.response?.data;
+      const errorMsg = Array.isArray(errorData?.message) 
+        ? errorData.message.join(', ') 
+        : errorData?.message || error.message || 'Failed to record payment';
+      message.error(errorMsg);
+      console.error('Payment creation error:', errorData || error);
+      console.error('Error message array:', errorData?.message);
+      if (paymentData) {
+        console.error('Sent payment data:', paymentData);
+      }
     }
   };
 
@@ -224,13 +254,20 @@ const PaymentsPage: React.FC = () => {
       dataIndex: 'paymentNumber',
       key: 'paymentNumber',
       width: 140,
+      render: (text: string, record: any) => {
+        const paymentNo = text || record?.payment_number || 'N/A';
+        return <Text strong>{paymentNo}</Text>;
+      },
     },
     {
       title: 'Date',
       dataIndex: 'paymentDate',
       key: 'paymentDate',
       width: 120,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date: string, record: any) => {
+        const paymentDate = date || record?.payment_date;
+        return paymentDate ? dayjs(paymentDate).format('DD MMM YYYY') : 'N/A';
+      },
     },
     {
       title: 'Customer',
@@ -250,26 +287,35 @@ const PaymentsPage: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
-      render: (value: number) => (
-        <Text strong style={{ color: '#52c41a' }}>
-          ₹{Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-        </Text>
-      ),
+      render: (value: number) => {
+        const amount = Number(value) || 0;
+        return (
+          <Text strong style={{ color: '#52c41a' }}>
+            ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </Text>
+        );
+      },
     },
     {
       title: 'Method',
       dataIndex: 'paymentMethod',
       key: 'paymentMethod',
       width: 140,
-      render: (method: string) => {
+      render: (method: string, record: any) => {
+        // Handle both camelCase and snake_case from backend
+        const paymentMethod = method || record?.payment_method || 'N/A';
+        if (!paymentMethod || paymentMethod === 'N/A') {
+          return <Tag>N/A</Tag>;
+        }
         const colorMap: any = {
           cash: 'green',
           bank_transfer: 'blue',
           credit_card: 'purple',
           debit_card: 'cyan',
           cheque: 'orange',
+          check: 'orange',
         };
-        return <Tag color={colorMap[method] || 'default'}>{method.replace('_', ' ').toUpperCase()}</Tag>;
+        return <Tag color={colorMap[paymentMethod] || 'default'}>{paymentMethod.replace(/_/g, ' ').toUpperCase()}</Tag>;
       },
     },
     {
@@ -277,6 +323,10 @@ const PaymentsPage: React.FC = () => {
       dataIndex: 'reference',
       key: 'reference',
       width: 160,
+      render: (text: string, record: any) => {
+        const reference = text || record?.reference_number || 'N/A';
+        return <Text>{reference}</Text>;
+      },
     },
     {
       title: 'Actions',
@@ -301,7 +351,7 @@ const PaymentsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Title level={2}>
         <DollarOutlined style={{ marginRight: 12, color: '#667eea' }} />
         Payments

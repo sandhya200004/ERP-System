@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Typography, Table, Tag, Progress, Spin } from 'antd';
 import { 
   FileTextOutlined, 
-  RiseOutlined
+  RiseOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import { customerService } from '../services/customer.service';
 import { itemService } from '../services/item.service';
 import { invoiceService } from '../services/invoice.service';
 import { quoteService } from '../services/quote.service';
+import { useAuthStore } from '../store/authStore';
+import EmployeeBadgeModal from '../components/EmployeeBadgeModal';
 
 const { Title, Text } = Typography;
 
@@ -25,7 +28,9 @@ interface Stats {
 }
 
 const DashboardPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [stats, setStats] = useState<Stats>({
     totalCustomers: 0,
     totalItems: 0,
@@ -40,18 +45,25 @@ const DashboardPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    // Only fetch admin stats if user is ADMIN or LEAD_MANAGER
+    const userRole = user?.role?.toUpperCase();
+    if (userRole === 'ADMIN' || userRole === 'LEAD_MANAGER') {
+      fetchStats();
+    } else {
+      // For employees, just stop loading
+      setLoading(false);
+    }
+  }, [user?.role]);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
       const [customerStats, itemStats, invoiceStats, invoicesData, quotesData] = await Promise.all([
-        customerService.getStats(),
-        itemService.getStats(),
-        invoiceService.getStats(),
-        invoiceService.getAll(),
-        quoteService.getAll().catch(() => []), // Handle if quotes endpoint fails
+        customerService.getStats().catch(() => ({ total: 0 })),
+        itemService.getStats().catch(() => ({ total: 0 })),
+        invoiceService.getStats().catch(() => ({ total: 0, totalRevenue: 0 })),
+        invoiceService.getAll().catch(() => []),
+        quoteService.getAll().catch(() => []),
       ]);
 
       // Ensure invoicesData is an array
@@ -161,9 +173,90 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  // Employee Dashboard (Limited View)
+  const userRole = user?.role?.toUpperCase();
+  if (userRole === 'EMPLOYEE' || userRole === 'DEVELOPER') {
+    return (
+      <div style={{ padding: '24px', backgroundColor: '#000', minHeight: '100vh' }}>
+        <Title level={2} style={{ marginBottom: '24px', color: '#fff' }}>Welcome, {user?.firstName}! 👋</Title>
+        
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <Card 
+              variant="borderless" 
+              style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', height: '150px' }}
+              onClick={() => window.location.href = '/attendance'}
+              hoverable
+            >
+              <Statistic
+                title={<span style={{ color: '#fff', fontSize: '16px' }}>Mark Attendance</span>}
+                value=""
+                valueStyle={{ color: '#fff', fontSize: '20px' }}
+                prefix={<FileTextOutlined style={{ fontSize: '48px', color: '#fff' }} />}
+              />
+            </Card>
+          </Col>
+          
+          <Col xs={24} md={8}>
+            <Card 
+              variant="borderless" 
+              style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', height: '150px' }}
+              onClick={() => window.location.href = '/kpi'}
+              hoverable
+            >
+              <Statistic
+                title={<span style={{ color: '#fff', fontSize: '16px' }}>My KPI Tasks</span>}
+                value=""
+                valueStyle={{ color: '#fff', fontSize: '20px' }}
+                prefix={<RiseOutlined style={{ fontSize: '48px', color: '#fff' }} />}
+              />
+            </Card>
+          </Col>
+          
+          <Col xs={24} md={8}>
+            <Card 
+              variant="borderless" 
+              style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', height: '150px' }}
+              onClick={() => setShowBadgeModal(true)}
+              hoverable
+            >
+              <Statistic
+                title={<span style={{ color: '#fff', fontSize: '16px' }}>My Badge</span>}
+                value=""
+                valueStyle={{ color: '#fff', fontSize: '20px' }}
+                prefix={<IdcardOutlined style={{ fontSize: '48px', color: '#fff' }} />}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        <Card style={{ marginTop: '24px' }}>
+          <Title level={4}>Quick Actions</Title>
+          <Text type="secondary">
+            • Track your daily attendance<br />
+            • View and submit your KPI tasks<br />
+            • View your digital employee badge<br />
+          </Text>
+        </Card>
+
+        {/* Employee Badge Modal */}
+        <EmployeeBadgeModal
+          visible={showBadgeModal}
+          onClose={() => setShowBadgeModal(false)}
+          employeeName={user ? `${user.firstName} ${user.lastName}` : 'Employee'}
+          employeeTitle={typeof user?.role === 'string' ? user.role : (user?.role as any)?.name || 'Employee'}
+          employeeId={user?.employeeId || 'N/A'}
+          enableWebcam={false}
+          title="My Digital Badge"
+        />
+      </div>
+    );
+  }
+
+  // Admin/Manager Dashboard (Full View)
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={2} style={{ marginBottom: '24px' }}>Dashboard</Title>
+    <div style={{ padding: '24px', backgroundColor: '#000', minHeight: '100vh' }}>
+      <Title level={2} style={{ marginBottom: '24px', color: '#fff' }}>Dashboard</Title>
 
       {/* Top Stats Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>

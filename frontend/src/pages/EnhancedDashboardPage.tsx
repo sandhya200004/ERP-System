@@ -50,6 +50,8 @@ import {
 import { customerService } from '../services/customer.service';
 import { itemService } from '../services/item.service';
 import { invoiceService } from '../services/invoice.service';
+import { quoteService } from '../services/quote.service';
+import { paymentService } from '../services/payment.service';
 
 const { Title, Text } = Typography;
 
@@ -62,8 +64,13 @@ interface Stats {
   quotesByStatus: { [key: string]: number };
   recentInvoices: any[];
   recentQuotes: any[];
+  recentPayments: any[];
   customerGrowth: number;
   unpaidAmount: number;
+  totalPayments: number;
+  revenueByMonth: any[];
+  customersByMonth: any[];
+  topItems: any[];
 }
 
 const EnhancedDashboardPage: React.FC = () => {
@@ -77,25 +84,52 @@ const EnhancedDashboardPage: React.FC = () => {
     quotesByStatus: {},
     recentInvoices: [],
     recentQuotes: [],
-    customerGrowth: 30,
+    recentPayments: [],
+    customerGrowth: 0,
     unpaidAmount: 0,
+    totalPayments: 0,
+    revenueByMonth: [],
+    customersByMonth: [],
+    topItems: [],
   });
 
   useEffect(() => {
     fetchStats();
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [customerStats, itemStats, invoiceStats, invoicesData] = await Promise.all([
+      const [
+        customerStats, 
+        itemStats, 
+        invoiceStats, 
+        paymentStats,
+        invoicesData,
+        quotesData,
+        paymentsData,
+        customersData,
+        itemsData
+      ] = await Promise.all([
         customerService.getStats(),
         itemService.getStats(),
         invoiceService.getStats(),
+        paymentService.getStats(),
         invoiceService.getAll(),
+        quoteService.getAll(),
+        paymentService.getAll(),
+        customerService.getAll(),
+        itemService.getAll(),
       ]);
 
       const invoices = Array.isArray(invoicesData) ? invoicesData : invoicesData?.data || [];
+      const quotes: any[] = Array.isArray(quotesData) ? quotesData : (quotesData as any)?.data || [];
+      const payments = Array.isArray(paymentsData) ? paymentsData : paymentsData?.data || [];
+      const customers = Array.isArray(customersData) ? customersData : customersData?.data || [];
+      const items = Array.isArray(itemsData) ? itemsData : itemsData?.data || [];
 
       const invoicesByStatus: { [key: string]: number } = {
         draft: 0,
@@ -110,132 +144,252 @@ const EnhancedDashboardPage: React.FC = () => {
         draft: 0,
         pending: 0,
         sent: 0,
-        declined: 0,
         accepted: 0,
-        expired: 0,
+        rejected: 0,
       };
 
+      // Calculate invoice statistics
       let unpaidAmount = 0;
-      invoices.forEach((inv: any) => {
-        if (inv.status === 'draft') invoicesByStatus.draft++;
-        else if (inv.status === 'sent') invoicesByStatus.pending++;
-        else if (inv.status === 'partially_paid') invoicesByStatus.partially++;
-        else if (inv.status === 'paid') invoicesByStatus.paid++;
+      invoices.forEach((invoice: any) => {
+        const status = invoice.status?.toLowerCase() || 'draft';
+        invoicesByStatus[status] = (invoicesByStatus[status] || 0) + 1;
         
-        if (inv.status !== 'paid' && inv.status !== 'cancelled') {
-          unpaidAmount += Number(inv.amountDue || 0);
+        if (['pending', 'unpaid', 'overdue', 'partially'].includes(status)) {
+          unpaidAmount += Number(invoice.total || 0);
         }
       });
+
+      // Calculate quote statistics
+      quotes.forEach((quote: any) => {
+        const status = quote.status?.toLowerCase() || 'draft';
+        quotesByStatus[status] = (quotesByStatus[status] || 0) + 1;
+      });
+
+      // Calculate revenue by month (last 7 months)
+      const revenueByMonth = generateRevenueByMonth(invoices, payments);
+      
+      // Calculate customer growth by month
+      const customersByMonth = generateCustomersByMonth(customers);
+
+      // Calculate top products/services
+      const topItems = calculateTopItems(invoices, items);
+
+      // Get recent activities
+      const recentInvoicesFormatted = invoices.slice(0, 3).map((inv: any) => ({
+        ...inv,
+        type: 'invoice',
+      }));
+      
+      const recentQuotesFormatted = quotes.slice(0, 2).map((quote: any) => ({
+        ...quote,
+        type: 'quote',
+      }));
+
+      const recentPaymentsFormatted = payments.slice(0, 2).map((payment: any) => ({
+        ...payment,
+        type: 'payment',
+      }));
+
+      // Calculate customer growth percentage
+      const lastMonthCustomers = customers.filter((c: any) => {
+        const createdDate = new Date(c.createdAt);
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        return createdDate < lastMonth;
+      }).length;
+      const customerGrowth = lastMonthCustomers > 0 
+        ? Math.round(((customerStats.total - lastMonthCustomers) / lastMonthCustomers) * 100)
+        : 0;
 
       setStats({
         totalCustomers: customerStats.total || 0,
         totalItems: itemStats.total || 0,
         totalInvoices: invoiceStats.total || 0,
-        totalRevenue: invoiceStats.totalRevenue || 0,
+        totalRevenue: Number(invoiceStats.totalRevenue || 0),
         invoicesByStatus,
         quotesByStatus,
-        recentInvoices: invoices.slice(0, 5),
-        recentQuotes: [],
-        customerGrowth: 30,
+        recentInvoices: recentInvoicesFormatted,
+        recentQuotes: recentQuotesFormatted,
+        recentPayments: recentPaymentsFormatted,
+        customerGrowth,
         unpaidAmount,
+        totalPayments: paymentStats.totalAmount || 0,
+        revenueByMonth,
+        customersByMonth,
+        topItems,
       });
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      console.error('Error fetching dashboard stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock data for charts
-  const revenueData = [
-    { month: 'Jan', revenue: 45000, expenses: 32000, profit: 13000 },
-    { month: 'Feb', revenue: 52000, expenses: 35000, profit: 17000 },
-    { month: 'Mar', revenue: 48000, expenses: 33000, profit: 15000 },
-    { month: 'Apr', revenue: 61000, expenses: 38000, profit: 23000 },
-    { month: 'May', revenue: 55000, expenses: 36000, profit: 19000 },
-    { month: 'Jun', revenue: 67000, expenses: 40000, profit: 27000 },
-    { month: 'Jul', revenue: 72000, expenses: 42000, profit: 30000 },
-  ];
+  // Helper function to generate revenue data by month
+  const generateRevenueByMonth = (invoices: any[], _payments: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    const result = [];
 
-  const salesPipelineData = [
-    { name: 'Leads', value: 45, color: '#8884d8' },
-    { name: 'Proposals', value: 28, color: '#83a6ed' },
-    { name: 'Negotiations', value: 18, color: '#8dd1e1' },
-    { name: 'Won', value: 35, color: '#82ca9d' },
-    { name: 'Lost', value: 12, color: '#ff8042' },
-  ];
+    for (let i = 6; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthName = months[monthIndex];
+      
+      // Calculate revenue from paid invoices
+      const monthRevenue = invoices
+        .filter((inv: any) => {
+          if (!inv.invoiceDate) return false;
+          const invDate = new Date(inv.invoiceDate);
+          return invDate.getMonth() === monthIndex && 
+                 ['paid', 'partially'].includes(inv.status?.toLowerCase());
+        })
+        .reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
 
-  const customerGrowthData = [
-    { month: 'Jan', customers: 120 },
-    { month: 'Feb', customers: 145 },
-    { month: 'Mar', customers: 168 },
-    { month: 'Apr', customers: 195 },
-    { month: 'May', customers: 220 },
-    { month: 'Jun', customers: 258 },
-    { month: 'Jul', customers: 285 },
-  ];
+      // Calculate payments for this month (not used for chart, kept for potential future use)
+      // payments.filter((pay: any) => {
+      //   if (!pay.paymentDate) return false;
+      //   const payDate = new Date(pay.paymentDate);
+      //   return payDate.getMonth() === monthIndex;
+      // }).reduce((sum: number, pay: any) => sum + Number(pay.amount || 0), 0);
 
-  const topProductsData = [
-    { name: 'Web Development', sales: 125000, count: 12 },
-    { name: 'UI/UX Design', sales: 95000, count: 18 },
-    { name: 'Digital Marketing', sales: 78000, count: 25 },
-    { name: 'SaaS Development', sales: 150000, count: 5 },
-    { name: 'Consulting', sales: 65000, count: 15 },
-  ];
+      // Estimate expenses as 60% of revenue
+      const expenses = Math.round(monthRevenue * 0.6);
+      const profit = monthRevenue - expenses;
+
+      result.push({
+        month: monthName,
+        revenue: Math.round(monthRevenue),
+        expenses,
+        profit,
+      });
+    }
+
+    return result;
+  };
+
+  // Helper function to generate customer growth data
+  const generateCustomersByMonth = (customers: any[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    const result = [];
+    let cumulativeCount = 0;
+
+    for (let i = 6; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthName = months[monthIndex];
+      
+      const monthCustomers = customers.filter((c: any) => {
+        if (!c.createdAt) return false;
+        const createdDate = new Date(c.createdAt);
+        return createdDate.getMonth() <= monthIndex;
+      }).length;
+
+      cumulativeCount = monthCustomers;
+
+      result.push({
+        month: monthName,
+        customers: cumulativeCount,
+      });
+    }
+
+    return result;
+  };
+
+  // Helper function to calculate top items/services
+  const calculateTopItems = (invoices: any[], _items: any[]) => {
+    const itemStats: { [key: string]: { name: string; sales: number; count: number } } = {};
+
+    invoices.forEach((invoice: any) => {
+      if (invoice.lines && Array.isArray(invoice.lines)) {
+        invoice.lines.forEach((line: any) => {
+          const itemId = line.itemId || line.description;
+          const itemName = line.description || 'Unknown Item';
+          const lineTotal = Number(line.quantity || 0) * Number(line.unitPrice || 0);
+
+          if (!itemStats[itemId]) {
+            itemStats[itemId] = { name: itemName, sales: 0, count: 0 };
+          }
+
+          itemStats[itemId].sales += lineTotal;
+          itemStats[itemId].count += Number(line.quantity || 0);
+        });
+      }
+    });
+
+    return Object.values(itemStats)
+      .sort((a, b) => b.sales - a.sales)
+      .slice(0, 5);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   const recentActivities = [
-    { 
-      id: 1, 
-      type: 'invoice', 
-      title: 'Invoice #32 created', 
-      client: 'Microsoftp', 
-      amount: 47600, 
-      time: '2 hours ago',
-      status: 'draft'
-    },
-    { 
-      id: 2, 
-      type: 'payment', 
-      title: 'Payment received', 
-      client: 'Techprogramming', 
-      amount: 28084, 
-      time: '4 hours ago',
-      status: 'success'
-    },
-    { 
-      id: 3, 
-      type: 'quote', 
-      title: 'Quote #9 accepted', 
-      client: 'Techprogramming', 
-      amount: 22000, 
-      time: '6 hours ago',
-      status: 'accepted'
-    },
-    { 
-      id: 4, 
-      type: 'customer', 
-      title: 'New customer added', 
-      client: 'ABC Company', 
-      amount: 0, 
-      time: '1 day ago',
-      status: 'new'
-    },
-    { 
-      id: 5, 
-      type: 'expense', 
-      title: 'Expense approved', 
-      client: 'Office Supplies', 
-      amount: 2500, 
-      time: '1 day ago',
-      status: 'approved'
-    },
-  ];
+    ...stats.recentInvoices.map((inv: any) => ({
+      id: inv.id,
+      type: 'invoice',
+      title: `Invoice ${inv.invoiceNumber} created`,
+      client: inv.customer?.name || 'N/A',
+      amount: Number(inv.total || 0),
+      time: formatTimeAgo(inv.invoiceDate),
+      status: inv.status,
+    })),
+    ...stats.recentPayments.map((pay: any) => ({
+      id: pay.id,
+      type: 'payment',
+      title: 'Payment received',
+      client: pay.customer?.name || 'N/A',
+      amount: Number(pay.amount || 0),
+      time: formatTimeAgo(pay.paymentDate),
+      status: 'success',
+    })),
+    ...stats.recentQuotes.map((quote: any) => ({
+      id: quote.id,
+      type: 'quote',
+      title: `Quote ${quote.quoteNumber} ${quote.status}`,
+      client: quote.customer?.name || 'N/A',
+      amount: Number(quote.total || 0),
+      time: formatTimeAgo(quote.quoteDate),
+      status: quote.status,
+    })),
+  ].slice(0, 5);
 
   const upcomingTasks = [
-    { id: 1, title: 'Follow up with Microsoftp', dueDate: 'Today', priority: 'high' },
+    { id: 1, title: 'Follow up with Microsoft', dueDate: 'Today', priority: 'high' },
     { id: 2, title: 'Send proposal to ABC Company', dueDate: 'Tomorrow', priority: 'medium' },
     { id: 3, title: 'Review expense reports', dueDate: 'Nov 10', priority: 'low' },
     { id: 4, title: 'Client meeting - Techprogramming', dueDate: 'Nov 12', priority: 'high' },
+  ];
+
+  function formatTimeAgo(dateString: string) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return '1 day ago';
+    return `${diffDays} days ago`;
+  }
+
+  const salesPipelineData = [
+    { name: 'Draft', value: stats.quotesByStatus.draft || 0, color: '#8884d8' },
+    { name: 'Sent', value: stats.quotesByStatus.sent || 0, color: '#83a6ed' },
+    { name: 'Pending', value: stats.quotesByStatus.pending || 0, color: '#8dd1e1' },
+    { name: 'Accepted', value: stats.quotesByStatus.accepted || 0, color: '#82ca9d' },
+    { name: 'Rejected', value: stats.quotesByStatus.rejected || 0, color: '#ff8042' },
+  ];
+
+  const topProductsData = stats.topItems.length > 0 ? stats.topItems : [
+    { name: 'No data', sales: 0, count: 0 }
   ];
 
   const getActivityIcon = (type: string) => {
@@ -268,7 +422,7 @@ const EnhancedDashboardPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '0 0 24px 0' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       {/* Header with Period Selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>
@@ -410,7 +564,7 @@ const EnhancedDashboardPage: React.FC = () => {
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={stats.revenueByMonth}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#667eea" stopOpacity={0.8}/>
@@ -424,7 +578,7 @@ const EnhancedDashboardPage: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip formatter={(value) => `₹${Number(value).toLocaleString()}`} />
                 <Legend />
                 <Area 
                   type="monotone" 
@@ -497,7 +651,7 @@ const EnhancedDashboardPage: React.FC = () => {
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={customerGrowthData}>
+              <LineChart data={stats.customersByMonth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -524,9 +678,9 @@ const EnhancedDashboardPage: React.FC = () => {
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={topProductsData} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis type="number" />
+                <XAxis type="number" tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`} />
                 <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip />
+                <Tooltip formatter={(value) => `₹${Number(value).toLocaleString()}`} />
                 <Bar dataKey="sales" fill="#667eea" radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -65,9 +65,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       companyId: payload.company_id,
       branchId: user.user_roles?.[0]?.branch_id,
       permissions: Array.from(new Set(permissions)),
-      // Include employee profile data
-      role: employeeProfile?.role,
-      employeeId: employeeProfile?.employee_id,
+      // Include role from token payload (set during login)
+      role: payload.role || user.user_roles?.[0]?.roles?.name || 'EMPLOYEE',
+      employeeId: payload.employee_id || employeeProfile?.employee_id,
       designation: employeeProfile?.designation,
       department: employeeProfile?.department,
     };

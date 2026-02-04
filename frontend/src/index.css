@@ -2,19 +2,237 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif !important;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #000000 !important;
+  color: #ffffff;
+}
+
+#root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif !important;
+  background: #000000 !important;
+  min-height: 100vh;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Dark Theme Global Styles */
+.ant-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  color: #ffffff;
+}
+
+.ant-card-head {
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-card-head-title {
+  color: #ffffff !important;
+}
+
+.ant-table {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #ffffff !important;
+}
+
+.ant-table-thead > tr > th {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #9ca3af !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(168, 85, 247, 0.1) !important;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3) !important;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.4) !important;
+}
+
+.ant-input,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.ant-input:hover,
+.ant-input-number:hover,
+.ant-select-selector:hover,
+.ant-picker:hover {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+}
+
+.ant-input:focus,
+.ant-input-number:focus,
+.ant-select-selector:focus,
+.ant-picker:focus {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.1) !important;
+}
+
+.ant-input::placeholder {
+  color: #6b7280 !important;
+}
+
+.ant-select-item {
+  color: #ffffff !important;
+}
+
+.ant-select-item-option-selected {
+  background: rgba(168, 85, 247, 0.2) !important;
+}
+
+.ant-modal-content {
+  background: rgba(26, 26, 26, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-modal-title {
+  color: #ffffff !important;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-statistic-title {
+  color: #9ca3af !important;
+}
+
+.ant-statistic-content {
+  color: #ffffff !important;
+}
+
+.ant-tag {
+  background: rgba(168, 85, 247, 0.1) !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+  color: #a855f7 !important;
+}
+
+.ant-divider {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-typography {
+  color: #ffffff !important;
+}
+
+.ant-descriptions-item-label {
+  color: #9ca3af !important;
+}
+
+.ant-descriptions-item-content {
+  color: #ffffff !important;
+}
+
+.ant-form-item-label > label {
+  color: #9ca3af !important;
+}
+
+.ant-checkbox-wrapper {
+  color: #ffffff !important;
+}
+
+.ant-radio-wrapper {
+  color: #ffffff !important;
+}
+
+.ant-alert {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-alert-success {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.ant-alert-warning {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.ant-alert-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.ant-alert-info {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+.ant-badge-count {
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%) !important;
+}
+
+.ant-pagination-item {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-pagination-item a {
+  color: #ffffff !important;
+}
+
+.ant-pagination-item-active {
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%) !important;
+  border-color: transparent !important;
+}
+
+.ant-pagination-item-active a {
+  color: #ffffff !important;
+}
+
+.ant-tabs-tab {
+  color: #9ca3af !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #a855f7 !important;
+}
+
+.ant-tabs-ink-bar {
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%) !important;
 }
 
 /* Mobile Responsive Styles */
@@ -292,4 +510,93 @@ code {
   .ant-card-body {
     padding: 20px;
   }
+}
+
+/* Force Plus Jakarta Sans font across all Ant Design components */
+.ant-layout,
+.ant-menu,
+.ant-menu-item,
+.ant-menu-submenu,
+.ant-card,
+.ant-card-head,
+.ant-card-body,
+.ant-table,
+.ant-table-thead,
+.ant-table-tbody,
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-select-selection-item,
+.ant-form,
+.ant-form-item,
+.ant-form-item-label,
+.ant-modal,
+.ant-modal-header,
+.ant-modal-body,
+.ant-modal-title,
+.ant-statistic,
+.ant-statistic-title,
+.ant-statistic-content,
+.ant-tag,
+.ant-divider,
+.ant-alert,
+.ant-pagination,
+.ant-tabs,
+.ant-tabs-tab,
+.ant-dropdown,
+.ant-dropdown-menu,
+.ant-notification,
+.ant-message,
+.ant-drawer,
+.ant-drawer-header,
+.ant-drawer-body,
+.ant-badge,
+.ant-avatar,
+.ant-typography,
+.ant-descriptions,
+.ant-space,
+.ant-row,
+.ant-col,
+span,
+div,
+p,
+h1, h2, h3, h4, h5, h6,
+button,
+input,
+textarea,
+label {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif !important;
+}
+
+/* Force black background for all page containers */
+.ant-layout,
+.ant-layout-content,
+.ant-layout-header,
+.ant-layout-footer {
+  background: #000000 !important;
+}
+
+/* Ensure all dropdowns have dark background */
+.ant-select-dropdown,
+.ant-dropdown-menu,
+.ant-picker-dropdown {
+  background: rgba(26, 26, 26, 0.98) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-select-item {
+  background: transparent !important;
+}
+
+.ant-select-item:hover {
+  background: rgba(168, 85, 247, 0.2) !important;
+}
+
+/* Drawer and Modal backgrounds */
+.ant-drawer-content,
+.ant-drawer-wrapper-body {
+  background: #000000 !important;
 }

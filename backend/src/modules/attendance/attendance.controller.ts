@@ -3,11 +3,13 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { AttendanceService } from './attendance.service';
 import { CheckInDto, CheckOutDto, AttendanceQueryDto } from './dto/attendance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/user.decorator';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
@@ -33,6 +35,7 @@ export class AttendanceController {
   }
 
   @Get('team-attendance')
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Get team attendance (Admin only)' })
   async getTeamAttendance(@CurrentUser() user: any, @Query() query: AttendanceQueryDto) {
     return this.attendanceService.getTeamAttendance(user.companyId, query);

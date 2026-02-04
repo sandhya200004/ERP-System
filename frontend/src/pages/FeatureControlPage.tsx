@@ -116,7 +116,7 @@ export default function FeatureControlPage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
           <Title level={2}>

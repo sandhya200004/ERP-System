@@ -1,0 +1,31 @@
+services:
+  # Backend API Service
+  - type: web
+    name: triverse-erp-backend
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+    healthCheckPath: /api/v1/health
+
+# Database (if you want Render to manage it)
+# Uncomment if you want to use Render PostgreSQL
+# databases:
+#   - name: triverse-erp-db
+#     databaseName: triverse_erp
+#     user: triverse_admin
+#     plan: starter

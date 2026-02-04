@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Tabs,
@@ -15,7 +15,8 @@ import {
   Typography,
   Space,
   InputNumber,
-  Alert
+  Alert,
+  Modal
 } from 'antd';
 import {
   UploadOutlined,
@@ -29,6 +30,8 @@ import {
   FileTextOutlined,
   CloudUploadOutlined
 } from '@ant-design/icons';
+import { settingsService, Settings } from '../services/settings.service';
+import { useAuthStore } from '../store/authStore';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -37,22 +40,101 @@ const { TextArea } = Input;
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<Settings>({});
+  const [form] = Form.useForm();
+  const [emailForm] = Form.useForm();
+  const { user } = useAuthStore();
+
+  // Suppress unused warning - these are used in the component
+  void loading;
+  void settings;
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await settingsService.getSettings();
+      setSettings(data);
+      form.setFieldsValue(data);
+      emailForm.setFieldsValue(data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      message.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSaveSettings = async (values: any) => {
     try {
       setSaving(true);
-      // TODO: Connect to API
-      console.log('Saving settings:', values);
+      await settingsService.updateSettings(values);
       message.success('Settings saved successfully!');
+      loadSettings();
     } catch (error) {
+      console.error('Error saving settings:', error);
       message.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleTestEmail = async () => {
+    try {
+      const values = emailForm.getFieldsValue();
+      
+      // Validate that email settings are filled
+      if (!values.smtpHost || !values.smtpUsername || !values.smtpPassword) {
+        message.warning('Please fill in SMTP host, username, and password before testing');
+        return;
+      }
+
+      // Prompt for test email address
+      Modal.confirm({
+        title: 'Send Test Email',
+        content: (
+          <div>
+            <p>Enter the email address to send the test email to:</p>
+            <Input id="test-email-input" defaultValue={user?.email || ''} placeholder="recipient@example.com" />
+          </div>
+        ),
+        onOk: async () => {
+          const emailInput = document.getElementById('test-email-input') as HTMLInputElement;
+          const toEmail = emailInput?.value;
+
+          if (!toEmail) {
+            message.error('Please enter an email address');
+            return;
+          }
+
+          setTesting(true);
+          try {
+            const result = await settingsService.testEmail(toEmail, values);
+            if (result.success) {
+              message.success(result.message);
+            } else {
+              message.error(result.message || 'Failed to send test email');
+            }
+          } catch (error: any) {
+            message.error(error.response?.data?.message || 'Failed to send test email');
+          } finally {
+            setTesting(false);
+          }
+        },
+      });
+    } catch (error) {
+      console.error('Error testing email:', error);
+      message.error('Failed to test email');
+    }
+  };
+
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>
           <SettingOutlined /> Settings
@@ -76,23 +158,21 @@ const SettingsPage: React.FC = () => {
             <Paragraph type="secondary">Configure basic application settings</Paragraph>
             <Divider />
 
-            <Form layout="vertical" onFinish={handleSaveSettings}>
+            <Form layout="vertical" form={form} onFinish={handleSaveSettings}>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     label="Application Name"
                     name="appName"
-                    initialValue="TriVerse ERP/CRM"
                     rules={[{ required: true }]}
                   >
-                    <Input />
+                    <Input placeholder="TriVerse ERP/CRM" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     label="Language"
                     name="language"
-                    initialValue="en"
                   >
                     <Select>
                       <Select.Option value="en">English</Select.Option>
@@ -108,7 +188,6 @@ const SettingsPage: React.FC = () => {
                   <Form.Item
                     label="Country"
                     name="country"
-                    initialValue="India"
                   >
                     <Select showSearch>
                       <Select.Option value="India">🇮🇳 India</Select.Option>
@@ -496,27 +575,46 @@ const SettingsPage: React.FC = () => {
               description="Configure your SMTP server to send invoices, quotes, and notifications via email."
               type="info"
               showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            <Alert
+              message="Gmail Users: Use App Password"
+              description={
+                <div>
+                  <p>If you're using Gmail, you need to use an App Password instead of your regular password:</p>
+                  <ol style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
+                    <li>Go to your Google Account settings</li>
+                    <li>Navigate to Security → 2-Step Verification</li>
+                    <li>At the bottom, select App passwords</li>
+                    <li>Select "Mail" and your device, then Generate</li>
+                    <li>Copy the 16-character password and use it in the SMTP Password field</li>
+                  </ol>
+                </div>
+              }
+              type="warning"
+              showIcon
               style={{ marginBottom: 24 }}
             />
 
-            <Form layout="vertical" onFinish={handleSaveSettings}>
+            <Form layout="vertical" form={emailForm} onFinish={handleSaveSettings}>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     label="SMTP Host"
                     name="smtpHost"
-                    initialValue="smtp.gmail.com"
+                    rules={[{ required: true, message: 'Please enter SMTP host' }]}
                   >
-                    <Input />
+                    <Input placeholder="smtp.gmail.com" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     label="SMTP Port"
                     name="smtpPort"
-                    initialValue={587}
+                    rules={[{ required: true, message: 'Please enter SMTP port' }]}
                   >
-                    <InputNumber min={1} max={65535} style={{ width: '100%' }} />
+                    <InputNumber min={1} max={65535} style={{ width: '100%' }} placeholder="587" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -526,16 +624,18 @@ const SettingsPage: React.FC = () => {
                   <Form.Item
                     label="SMTP Username"
                     name="smtpUsername"
+                    rules={[{ required: true, message: 'Please enter SMTP username' }]}
                   >
-                    <Input />
+                    <Input placeholder="your-email@gmail.com" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     label="SMTP Password"
                     name="smtpPassword"
+                    rules={[{ required: true, message: 'Please enter SMTP password' }]}
                   >
-                    <Input.Password />
+                    <Input.Password placeholder="Your app password" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -545,18 +645,21 @@ const SettingsPage: React.FC = () => {
                   <Form.Item
                     label="From Email"
                     name="fromEmail"
-                    initialValue="noreply@triverse.com"
+                    rules={[
+                      { required: true, message: 'Please enter from email' },
+                      { type: 'email', message: 'Please enter a valid email' }
+                    ]}
                   >
-                    <Input />
+                    <Input placeholder="noreply@triverse.com" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     label="From Name"
                     name="fromName"
-                    initialValue="TriVerse Solutions"
+                    rules={[{ required: true, message: 'Please enter from name' }]}
                   >
-                    <Input />
+                    <Input placeholder="TriVerse Solutions" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -566,7 +669,9 @@ const SettingsPage: React.FC = () => {
                   <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined />}>
                     Save Email Settings
                   </Button>
-                  <Button>Test Email</Button>
+                  <Button onClick={handleTestEmail} loading={testing}>
+                    Test Email
+                  </Button>
                 </Space>
               </Form.Item>
             </Form>

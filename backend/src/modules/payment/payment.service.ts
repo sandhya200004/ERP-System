@@ -60,16 +60,28 @@ export class PaymentService {
       // Create payment
       const payment = await tx.payments.create({
         data: {
+          id: require('crypto').randomUUID(),
           payment_number: paymentNumber,
-          company_id,
-          customer_id: paymentData.customerId,
           payment_date: new Date(paymentData.paymentDate),
           amount: paymentData.amount,
-          currency_code: currencyCode,
           fx_rate: fxRate,
           payment_method: paymentData.paymentMethod,
-          reference: paymentData.reference,
+          reference_number: paymentData.reference,
           notes: paymentData.notes,
+          created_at: new Date(),
+          updated_at: new Date(),
+          companies: {
+            connect: { id: company_id }
+          },
+          customers: {
+            connect: { id: paymentData.customerId }
+          },
+          currencies: {
+            connect: { code: currencyCode }
+          },
+          users: {
+            connect: { id: user_id }
+          }
         },
       });
 
@@ -100,6 +112,7 @@ export class PaymentService {
         // Create payment application
         await tx.payment_applications.create({
           data: {
+            id: require('crypto').randomUUID(),
             payment_id: payment.id,
             invoice_id: app.invoiceId,
             amount: app.amount,

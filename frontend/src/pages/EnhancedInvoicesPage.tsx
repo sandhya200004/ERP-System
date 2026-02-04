@@ -540,7 +540,7 @@ const EnhancedInvoicesPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>
           <FileTextOutlined style={{ marginRight: 12 }} />

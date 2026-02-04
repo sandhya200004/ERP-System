@@ -142,7 +142,7 @@ const QuotesPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <Title level={2} style={{ margin: 0 }}>Quotes</Title>

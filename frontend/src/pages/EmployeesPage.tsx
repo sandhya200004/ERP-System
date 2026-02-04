@@ -242,7 +242,7 @@ const EmployeesPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Card
         title={
           <Space>

@@ -293,7 +293,7 @@ const KPIReviewPage: React.FC = () => {
   const uniqueRoles = Array.from(new Set(teamKPIs.map((k) => k.role)));
 
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <Card>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col span={6}>

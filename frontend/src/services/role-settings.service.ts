@@ -45,7 +45,7 @@ class RoleSettingsService {
   // Get all roles with permissions
   async getAllRolesWithPermissions(): Promise<Role[]> {
     const response = await axios.get<Role[]>(
-      `${API_URL}/api/v1/role-settings/roles`,
+      `${API_URL}/role-settings/roles`,
       this.getAuthHeader()
     );
     return response.data;
@@ -54,7 +54,7 @@ class RoleSettingsService {
   // Get all available permissions
   async getAllPermissions(): Promise<PermissionsResponse> {
     const response = await axios.get<PermissionsResponse>(
-      `${API_URL}/api/v1/role-settings/permissions`,
+      `${API_URL}/role-settings/permissions`,
       this.getAuthHeader()
     );
     return response.data;
@@ -63,7 +63,7 @@ class RoleSettingsService {
   // Get features list
   async getFeaturesList(): Promise<Feature[]> {
     const response = await axios.get<Feature[]>(
-      `${API_URL}/api/v1/role-settings/features`,
+      `${API_URL}/role-settings/features`,
       this.getAuthHeader()
     );
     return response.data;
@@ -72,7 +72,7 @@ class RoleSettingsService {
   // Get role by ID
   async getRoleWithPermissions(roleId: string): Promise<Role> {
     const response = await axios.get<Role>(
-      `${API_URL}/api/v1/role-settings/roles/${roleId}`,
+      `${API_URL}/role-settings/roles/${roleId}`,
       this.getAuthHeader()
     );
     return response.data;
@@ -81,7 +81,7 @@ class RoleSettingsService {
   // Update role permissions
   async updateRolePermissions(roleId: string, permissionIds: string[]): Promise<Role[]> {
     const response = await axios.put<Role[]>(
-      `${API_URL}/api/v1/role-settings/roles/${roleId}/permissions`,
+      `${API_URL}/role-settings/roles/${roleId}/permissions`,
       { permissionIds },
       this.getAuthHeader()
     );
@@ -95,7 +95,7 @@ class RoleSettingsService {
     roleIds: string[]
   ): Promise<Role[]> {
     const response = await axios.post<Role[]>(
-      `${API_URL}/api/v1/role-settings/toggle-feature`,
+      `${API_URL}/role-settings/toggle-feature`,
       { featureKey, enabled, roleIds },
       this.getAuthHeader()
     );
@@ -109,7 +109,7 @@ class RoleSettingsService {
     removePermissions: string[]
   ): Promise<Role[]> {
     const response = await axios.post<Role[]>(
-      `${API_URL}/api/v1/role-settings/bulk-update`,
+      `${API_URL}/role-settings/bulk-update`,
       { roleId, addPermissions, removePermissions },
       this.getAuthHeader()
     );
@@ -124,7 +124,7 @@ class RoleSettingsService {
     description?: string;
   }): Promise<Permission> {
     const response = await axios.post<Permission>(
-      `${API_URL}/api/v1/role-settings/permissions`,
+      `${API_URL}/role-settings/permissions`,
       data,
       this.getAuthHeader()
     );
@@ -134,7 +134,7 @@ class RoleSettingsService {
   // Check if role has feature
   async hasFeature(roleId: string, featureKey: string): Promise<boolean> {
     const response = await axios.get<{ enabled: boolean }>(
-      `${API_URL}/api/v1/role-settings/roles/${roleId}/features/${featureKey}`,
+      `${API_URL}/role-settings/roles/${roleId}/features/${featureKey}`,
       this.getAuthHeader()
     );
     return response.data.enabled;

@@ -486,7 +486,7 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
           </Button>
         ]}
       >
-        <div id="proposal-preview" style={{ padding: '40px', background: '#fff' }}>
+        <div id="proposal-preview" style={{ padding: '40px', background: '#fff', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#000' }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 40, borderBottom: '3px solid #2c3e7d', paddingBottom: 20 }}>
             <div>
@@ -495,69 +495,70 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
                 alt="TriVerse Solutions"
                 style={{ height: 50, marginBottom: 16 }}
               />
-              <Title level={4} style={{ margin: 0, color: '#2c3e7d' }}>
+              <Title level={4} style={{ margin: 0, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 TriVerse Solutions
               </Title>
-              <Text type="secondary">Digital Solutions & Consulting</Text>
+              <Text style={{ color: '#666', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Digital Solutions & Consulting</Text>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <Title level={2} style={{ margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <Title level={2} style={{ margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 PROPOSAL
               </Title>
-              <Text strong style={{ fontSize: 16 }}>#{proposalData?.proposalNumber}</Text>
+              <Text strong style={{ fontSize: 16, color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>#{proposalData?.proposalNumber}</Text>
               <br />
-              <Text type="secondary">Valid Until: {dayjs(proposalData?.validUntil).format('MMM DD, YYYY')}</Text>
+              <Text style={{ color: '#666', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Valid Until: {dayjs(proposalData?.validUntil).format('MMM DD, YYYY')}</Text>
             </div>
           </div>
 
           {/* Client Information */}
-          <Card style={{ marginBottom: 30, background: '#f5f5f5' }}>
+          <Card style={{ marginBottom: 30, background: '#f5f5f5', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             <Row gutter={40}>
               <Col span={12}>
-                <Title level={5} style={{ color: '#2c3e7d' }}>Prepared For:</Title>
-                <Text strong style={{ display: 'block', fontSize: 16 }}>{proposalData?.customer?.name}</Text>
-                {proposalData?.customer?.email && <Text>{proposalData.customer.email}</Text>}
-                {proposalData?.customer?.phone && <Text style={{ display: 'block' }}>{proposalData.customer.phone}</Text>}
+                <Title level={5} style={{ color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Prepared For:</Title>
+                <Text strong style={{ display: 'block', fontSize: 16, color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{proposalData?.customer?.name}</Text>
+                {proposalData?.customer?.email && <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{proposalData.customer.email}</Text>}
+                {proposalData?.customer?.phone && <Text style={{ display: 'block', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{proposalData.customer.phone}</Text>}
               </Col>
               <Col span={12}>
-                <Title level={5} style={{ color: '#2c3e7d' }}>Proposal Date:</Title>
-                <Text strong>{dayjs().format('MMMM DD, YYYY')}</Text>
+                <Title level={5} style={{ color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Proposal Date:</Title>
+                <Text strong style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{dayjs().format('MMMM DD, YYYY')}</Text>
               </Col>
             </Row>
           </Card>
 
           {/* Services */}
-          <Title level={4} style={{ color: '#2c3e7d', marginBottom: 20 }}>Proposed Services</Title>
+          <Title level={4} style={{ color: '#2c3e7d', marginBottom: 20, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Proposed Services</Title>
           
           {proposalData?.lines?.map((line: ProposalLine, index: number) => (
             <Card 
               key={index}
               style={{ 
                 marginBottom: 20,
-                borderLeft: '4px solid #667eea'
+                borderLeft: '4px solid #667eea',
+                fontFamily: "'Plus Jakarta Sans', sans-serif"
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Title level={5} style={{ margin: 0, color: '#2c3e7d' }}>
+                <Title level={5} style={{ margin: 0, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   {index + 1}. {line.service}
                 </Title>
-                <Text strong style={{ fontSize: 18, color: '#2c3e7d' }}>
+                <Text strong style={{ fontSize: 18, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   ₹{line.price.toLocaleString('en-IN')}
                 </Text>
               </div>
-              <Paragraph style={{ color: '#666', marginBottom: 12 }}>
+              <Paragraph style={{ color: '#666', marginBottom: 12, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 {line.description}
               </Paragraph>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Text strong>Deliverables:</Text>
-                  <Paragraph style={{ color: '#666', marginTop: 4 }}>
+                  <Text strong style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Deliverables:</Text>
+                  <Paragraph style={{ color: '#666', marginTop: 4, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     {line.deliverables}
                   </Paragraph>
                 </Col>
                 <Col span={12}>
-                  <Text strong>Timeline:</Text>
-                  <Paragraph style={{ color: '#666', marginTop: 4 }}>
+                  <Text strong style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Timeline:</Text>
+                  <Paragraph style={{ color: '#666', marginTop: 4, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     {line.timeline}
                   </Paragraph>
                 </Col>
@@ -566,12 +567,12 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
           ))}
 
           {/* Total */}
-          <div style={{ marginTop: 40, padding: 20, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 8 }}>
+          <div style={{ marginTop: 40, padding: 20, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Title level={3} style={{ margin: 0, color: '#fff' }}>
+              <Title level={3} style={{ margin: 0, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Total Investment
               </Title>
-              <Title level={2} style={{ margin: 0, color: '#fff' }}>
+              <Title level={2} style={{ margin: 0, color: '#fff', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 ₹{proposalData?.totalAmount.toLocaleString('en-IN')}
               </Title>
             </div>
@@ -580,8 +581,8 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
           {/* Terms */}
           {proposalData?.terms && (
             <div style={{ marginTop: 30 }}>
-              <Title level={5} style={{ color: '#2c3e7d' }}>Terms & Conditions</Title>
-              <Paragraph style={{ whiteSpace: 'pre-line' }}>
+              <Title level={5} style={{ color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Terms & Conditions</Title>
+              <Paragraph style={{ whiteSpace: 'pre-line', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 {proposalData.terms}
               </Paragraph>
             </div>
@@ -594,7 +595,7 @@ const ProposalBuilder: React.FC<ProposalBuilderProps> = ({
             borderTop: '2px solid #e8e8e8',
             textAlign: 'center'
           }}>
-            <Text strong style={{ fontSize: 16, color: '#2c3e7d' }}>
+            <Text strong style={{ fontSize: 16, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Let's Build Something Amazing Together!
             </Text>
             <br />
@@ -779,8 +780,17 @@ const ProposalsPage: React.FC = () => {
       const response = await quoteService.getAll();
       console.log('API Response:', response);
       
-      // Extract the data array from the response
-      const quotes = response || [];
+      // Handle both array and paginated responses
+      let quotes = [];
+      if (Array.isArray(response)) {
+        quotes = response;
+      } else if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
+        quotes = (response as any).data;
+      } else if (response && typeof response === 'object') {
+        // Response might be a single object or have other structure
+        quotes = [];
+      }
+      
       console.log('Quotes array:', quotes);
       
       const mappedProposals: Proposal[] = quotes.map((quote: any) => {
@@ -889,7 +899,7 @@ const ProposalsPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
       <style>{`
         @media print {
           body * {

@@ -15,15 +15,30 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - allow frontend dev origins
+  // CORS - allow local network and production origins
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://192.168.1.12:5173',
-      'http://localhost:5174',
-      'http://192.168.1.12:5174',
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost and local network IPs on any port
+      if (
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('http://127.0.0.1:') ||
+        origin.startsWith('http://192.168.') ||
+        origin.startsWith('http://10.') ||
+        origin.endsWith('.vercel.app') || // Vercel deployments
+        origin.endsWith('.onrender.com') || // Render deployments
+        origin === process.env.FRONTEND_URL // Custom domain
+      ) {
+        return callback(null, true);
+      }
+      
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   });
 
   // API prefix

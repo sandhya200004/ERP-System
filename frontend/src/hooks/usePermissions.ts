@@ -34,7 +34,7 @@ export function usePermissions() {
    * Check if user has a specific role
    */
   const hasRole = (roleName: string): boolean => {
-    return user?.role?.name === roleName;
+    return user?.role === roleName;
   };
 
   return {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, App, Drawer } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, Drawer } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -25,13 +25,12 @@ const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const DashboardLayout: React.FC = () => {
-  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { company, logout } = useAuthStore();
+  const { user, company, logout } = useAuthStore();
 
   // Detect mobile screen
   useEffect(() => {
@@ -70,125 +69,128 @@ const DashboardLayout: React.FC = () => {
     },
   ];
 
-  // Filter menu items based on user permissions
+  // Filter menu items based on user role
   const menuItems = useMemo(() => {
+    const userRole = user?.role?.toUpperCase();
+    
     const allItems = [
       {
         key: '/',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
         onClick: () => navigate('/'),
-        permission: 'VIEW_DASHBOARD' as const,
-      },
-      {
-        key: '/customers',
-        icon: <UserOutlined />,
-        label: 'Customers',
-        onClick: () => navigate('/customers'),
-        permission: 'VIEW_CUSTOMERS' as const,
-      },
-      {  key: '/items',
-        icon: <ShoppingOutlined />,
-        label: 'Products/Services',
-        onClick: () => navigate('/items'),
-        permission: 'VIEW_ITEMS' as const,
-      },
-      {
-        key: '/invoices',
-        icon: <FileTextOutlined />,
-        label: 'Invoices',
-        onClick: () => navigate('/invoices'),
-        permission: 'VIEW_INVOICES' as const,
-      },
-      {
-        key: '/payments',
-        icon: <DollarOutlined />,
-        label: 'Payments',
-        onClick: () => navigate('/payments'),
-        permission: 'VIEW_PAYMENTS' as const,
-      },
-      {
-        key: '/expenses',
-        icon: <DollarOutlined />,
-        label: 'Expenses',
-        onClick: () => navigate('/expenses'),
-        permission: 'VIEW_EXPENSES' as const,
-      },
-      {
-        key: '/leads',
-        icon: <UserOutlined />,
-        label: 'Leads',
-        onClick: () => navigate('/leads'),
-        permission: 'VIEW_LEADS' as const,
-      },
-      {
-        key: '/proposals',
-        icon: <FileSearchOutlined />,
-        label: 'Proposals',
-        onClick: () => navigate('/proposals'),
-        permission: 'VIEW_PROPOSALS' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
       },
       {
         key: '/attendance',
         icon: <ClockCircleOutlined />,
         label: 'Attendance',
         onClick: () => navigate('/attendance'),
-        permission: 'VIEW_ATTENDANCE' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
       },
       {
         key: '/kpi',
         icon: <TrophyOutlined />,
         label: 'My KPI',
         onClick: () => navigate('/kpi'),
-        permission: 'VIEW_KPI' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
+      },
+      {
+        key: '/customers',
+        icon: <UserOutlined />,
+        label: 'Customers',
+        onClick: () => navigate('/customers'),
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
+      },
+      {
+        key: '/items',
+        icon: <ShoppingOutlined />,
+        label: 'Products/Services',
+        onClick: () => navigate('/items'),
+        roles: ['ADMIN', 'LEAD_MANAGER'],
+      },
+      {
+        key: '/invoices',
+        icon: <FileTextOutlined />,
+        label: 'Invoices',
+        onClick: () => navigate('/invoices'),
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
+      },
+      {
+        key: '/payments',
+        icon: <DollarOutlined />,
+        label: 'Payments',
+        onClick: () => navigate('/payments'),
+        roles: ['ADMIN', 'LEAD_MANAGER'],
+      },
+      {
+        key: '/expenses',
+        icon: <DollarOutlined />,
+        label: 'Expenses',
+        onClick: () => navigate('/expenses'),
+        roles: ['ADMIN', 'LEAD_MANAGER'],
+      },
+      {
+        key: '/leads',
+        icon: <UserOutlined />,
+        label: 'Leads',
+        onClick: () => navigate('/leads'),
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
+      },
+      {
+        key: '/proposals',
+        icon: <FileSearchOutlined />,
+        label: 'Proposals',
+        onClick: () => navigate('/proposals'),
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
       },
       {
         key: '/employees',
         icon: <UserOutlined />,
         label: 'Employees',
         onClick: () => navigate('/employees'),
-        permission: 'VIEW_EMPLOYEES' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER'],
       },
       {
         key: '/kpi-review',
         icon: <BarChartOutlined />,
         label: 'KPI Review',
         onClick: () => navigate('/kpi-review'),
-        permission: 'VIEW_KPI' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER'],
       },
       {
         key: '/reports',
         icon: <BarChartOutlined />,
         label: 'Reports',
         onClick: () => navigate('/reports'),
-        permission: 'VIEW_REPORTS' as const,
+        roles: ['ADMIN', 'LEAD_MANAGER'],
       },
       {
         key: '/settings',
         icon: <SettingOutlined />,
         label: 'Settings',
         onClick: () => navigate('/settings'),
-        permission: 'VIEW_SETTINGS' as const,
+        roles: ['ADMIN'],
       },
       {
         key: '/role-settings',
         icon: <SecurityScanOutlined />,
         label: 'Role Settings',
         onClick: () => navigate('/role-settings'),
-        permission: 'MANAGE_COMPANY' as const,
+        roles: ['ADMIN'],
       },
       {
         key: '/feature-control',
         icon: <ControlOutlined />,
         label: 'Feature Control',
         onClick: () => navigate('/feature-control'),
-        permission: 'VIEW_SETTINGS' as const,
+        roles: ['ADMIN'],
       },
     ];
 
-    // Single company mode - show all menu items
-    return allItems;
-  }, [navigate]);
+    // Filter items based on user role
+    return allItems.filter(item => !item.roles || item.roles.includes(userRole || ''));
+  }, [navigate, user?.role]);
 
   const handleMenuClick = () => {
     if (isMobile) {
@@ -205,7 +207,8 @@ const DashboardLayout: React.FC = () => {
           alignItems: 'center',
           justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
           padding: collapsed && !isMobile ? 0 : '0 24px',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(0, 0, 0, 0.2)',
         }}
       >
         {!collapsed || isMobile ? (
@@ -219,11 +222,11 @@ const DashboardLayout: React.FC = () => {
               }} 
             />
             <div>
-              <Text strong style={{ fontSize: 16, display: 'block', lineHeight: '20px', color: '#2c3e7d' }}>
-                TriVerse
+              <Text strong style={{ fontSize: 16, display: 'block', lineHeight: '20px', color: '#ffffff' }}>
+                Triverse
               </Text>
-              <Text type="secondary" style={{ fontSize: 11, lineHeight: '14px' }}>
-                ERP/CRM System
+              <Text style={{ fontSize: 11, lineHeight: '14px', color: '#9ca3af' }}>
+                Systems Platform
               </Text>
             </div>
           </div>
@@ -242,14 +245,18 @@ const DashboardLayout: React.FC = () => {
         mode="inline"
         selectedKeys={[location.pathname]}
         items={menuItems}
-        style={{ borderRight: 0 }}
+        theme="dark"
+        style={{ 
+          borderRight: 0,
+          background: 'transparent'
+        }}
         onClick={handleMenuClick}
       />
     </>
   );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#000000' }}>
       {/* Desktop Sider */}
       {!isMobile && (
         <Sider 
@@ -257,8 +264,11 @@ const DashboardLayout: React.FC = () => {
           collapsible 
           collapsed={collapsed} 
           width={220} 
-          theme="light" 
-          style={{ borderRight: '1px solid #f0f0f0' }}
+          theme="dark" 
+          style={{ 
+            background: '#000000',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+          }}
         >
           {siderContent}
         </Sider>
@@ -272,20 +282,20 @@ const DashboardLayout: React.FC = () => {
           open={mobileDrawerVisible}
           closable={false}
           width={280}
-          styles={{ body: { padding: 0 } }}
+          styles={{ body: { padding: 0, background: '#000000' } }}
         >
           {siderContent}
         </Drawer>
       )}
 
-      <Layout>
+      <Layout style={{ background: '#000000' }}>
         <Header style={{ 
           padding: isMobile ? '0 12px' : '0 24px', 
-          background: '#fff', 
+          background: '#000000', 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px' }}>
             <Button
@@ -296,31 +306,15 @@ const DashboardLayout: React.FC = () => {
             />
             {!isMobile && (
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>English</Text>
-                <Text type="secondary" style={{ margin: '0 8px' }}>|</Text>
-                <Text strong style={{ fontSize: 13 }}>{company?.name || 'USA Company'}</Text>
+                <Text style={{ fontSize: 12, color: '#9ca3af' }}>English</Text>
+                <Text style={{ margin: '0 8px', color: '#9ca3af' }}>|</Text>
+                <Text strong style={{ fontSize: 13, color: '#ffffff' }}>{company?.name || 'USA Company'}</Text>
               </div>
             )}
           </div>
 
           <Space size={isMobile ? "small" : "large"}>
-            {!isMobile && (
-              <Button 
-                type="primary" 
-                size="large"
-                style={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                  fontWeight: 600,
-                  height: 42,
-                  padding: '0 24px'
-                }}
-                onClick={() => message.info('Contact us for custom features: sales@triverse.com')}
-              >
-                Request Custom Features
-              </Button>
-            )}
+
             <NotificationBell />
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Avatar size={isMobile ? "default" : "large"} icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
@@ -329,9 +323,9 @@ const DashboardLayout: React.FC = () => {
         </Header>
 
         <Content style={{ 
-          margin: isMobile ? '12px' : '24px', 
-          padding: isMobile ? 12 : 24, 
-          background: '#f0f2f5', 
+          margin: 0, 
+          padding: 0, 
+          background: '#000000', 
           minHeight: 280 
         }}>
           <Outlet />

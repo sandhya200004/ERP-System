@@ -2,27 +2,19 @@ import { create } from 'zustand';
 import { authService, type AuthResponse } from '../services/auth.service';
 
 export type UserRole = 
-  | 'CEO' 
-  | 'CTO' 
-  | 'CMO' 
-  | 'HR' 
-  | 'MANAGER' 
-  | 'DEVELOPER' 
-  | 'DESIGNER' 
-  | 'MARKETING' 
-  | 'RND' 
-  | 'EMPLOYEE';
+  | 'ADMIN'
+  | 'LEAD_MANAGER'
+  | 'DM_EXECUTIVE'
+  | 'EMPLOYEE'
+  | 'DEVELOPER';
 
 interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role?: {
-    name: string;
-    permissions: string[];
-  };
-  employeeId?: string; // TS2025, TSDM2025001, etc.
+  role?: string;
+  employeeId?: string;
   designation?: string;
   department?: string;
   permissions?: string[];
@@ -38,7 +30,7 @@ interface AuthState {
   company: Company | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (employeeId: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -49,9 +41,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  login: async (email: string, password: string) => {
+  login: async (employeeId: string, password: string) => {
     try {
-      const response: AuthResponse = await authService.login({ email, password });
+      const response: AuthResponse = await authService.login({ employeeId, password });
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       set({

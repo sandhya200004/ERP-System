@@ -26,10 +26,12 @@ import {
   BellOutlined,
   GlobalOutlined,
   SettingOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/auth.service';
 import { userService } from '../services/user.service';
+import ReflectiveCard from '../components/ReflectiveCard';
 import type { UploadProps } from 'antd';
 
 const { Title, Text } = Typography;
@@ -116,7 +118,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto', background: '#000000', minHeight: '100vh' }}>
       <Title level={2}>
         <UserOutlined style={{ marginRight: 12, color: '#667eea' }} />
         My Profile
@@ -124,7 +126,7 @@ const ProfilePage: React.FC = () => {
 
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={8}>
-          <Card>
+          <Card style={{ marginBottom: 24 }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}>
                 <Avatar 
@@ -177,6 +179,30 @@ const ProfilePage: React.FC = () => {
                   <Text strong>November 2025</Text>
                 </div>
               </Space>
+            </div>
+          </Card>
+
+          {/* Digital Employee Badge */}
+          <Card 
+            title={
+              <Space>
+                <IdcardOutlined />
+                <span>Digital Employee Badge</span>
+              </Space>
+            }
+            style={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none'
+            }}
+            headStyle={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <ReflectiveCard
+                employeeName={user ? `${user.firstName} ${user.lastName}` : 'Employee'}
+                employeeTitle={typeof user?.role === 'string' ? user.role : (user?.role as any)?.name || 'Employee'}
+                employeeId={user?.employeeId || 'N/A'}
+                enableWebcam={false}
+              />
             </div>
           </Card>
         </Col>

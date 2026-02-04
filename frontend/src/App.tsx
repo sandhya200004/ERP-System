@@ -50,8 +50,14 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#667eea',
-          borderRadius: 6,
+          colorPrimary: '#6366f1',
+          colorBgContainer: '#1a1a1a',
+          colorBgElevated: '#1a1a1a',
+          colorBorder: 'rgba(255, 255, 255, 0.08)',
+          colorText: '#ffffff',
+          colorTextSecondary: '#9ca3af',
+          colorTextTertiary: '#6b7280',
+          fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
         },
       }}
     >

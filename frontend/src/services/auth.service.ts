@@ -1,7 +1,7 @@
 import apiClient from './api';
 
 export interface LoginData {
-  email: string;
+  employeeId: string;
   password: string;
 }
 
@@ -20,10 +20,7 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
-    role?: {
-      name: string;
-      permissions: string[];
-    };
+    role?: string;
     employeeId?: string;
     designation?: string;
     department?: string;

@@ -29,7 +29,13 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { FeatureControlModule } from './modules/feature-control/feature-control.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { KpiModule } from './modules/kpi/kpi.module';
-import { NotificationModule } from './modules/notification/notification.module';
+import { KpiTasksModule } from './modules/kpi-tasks/kpi-tasks.module';
+import { VendorModule } from './modules/vendor/vendor.module';
+import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { SettingsModule } from './modules/settings/settings.module';
+// import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -74,7 +80,12 @@ import { NotificationModule } from './modules/notification/notification.module';
     FeatureControlModule,
     EmployeeModule,
     KpiModule,
-    NotificationModule,
+    KpiTasksModule,
+    VendorModule,
+    PurchaseOrderModule,
+    WarehouseModule,
+    InventoryModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

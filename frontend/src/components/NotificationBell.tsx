@@ -22,27 +22,35 @@ const NotificationBell: React.FC = () => {
       setNotifications(data);
       const count = data.filter((n) => !n.read).length;
       setUnreadCount(count);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+    } catch (error: any) {
+      // Silently handle 404 errors for missing notification endpoints
+      if (error?.response?.status !== 404) {
+        console.error('Failed to fetch notifications:', error);
+      }
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUnreadCount = async () => {
-    try {
-      const count = await notificationService.getUnreadCount();
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
+  // const fetchUnreadCount = async () => {
+  //   try {
+  //     const count = await notificationService.getUnreadCount();
+  //     setUnreadCount(count);
+  //   } catch (error: any) {
+  //     // Silently handle 404 errors for missing notification endpoints
+  //     if (error?.response?.status !== 404) {
+  //       console.error('Failed to fetch unread count:', error);
+  //     }
+  //   }
+  // };
 
   useEffect(() => {
-    fetchUnreadCount();
+    // Temporarily disabled until notification endpoints are implemented
+    // fetchUnreadCount();
     // Poll every 30 seconds for new notifications
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchUnreadCount, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const handleDropdownVisibleChange = (visible: boolean) => {

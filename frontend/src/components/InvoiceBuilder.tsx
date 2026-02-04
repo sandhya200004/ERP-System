@@ -404,7 +404,7 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
         ]}
         style={{ top: 20 }}
       >
-        <div id="invoice-preview" style={{ padding: '40px', background: '#fff' }}>
+        <div id="invoice-preview" style={{ padding: '40px', background: '#fff', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#000' }}>
           {/* Invoice Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 40 }}>
             <div>
@@ -413,35 +413,35 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                 alt="TriVerse Solutions"
                 style={{ height: 50, marginBottom: 16 }}
               />
-              <Title level={4} style={{ margin: 0, color: '#2c3e7d' }}>
+              <Title level={4} style={{ margin: 0, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 TriVerse Solutions
               </Title>
-              <Text type="secondary">ERP/CRM System</Text>
+              <Text style={{ color: '#666', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>ERP/CRM System</Text>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <Title level={2} style={{ margin: 0, color: '#2c3e7d' }}>
+              <Title level={2} style={{ margin: 0, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 INVOICE
               </Title>
-              <Text type="secondary">#{invoiceData?.invoiceNumber || 'DRAFT'}</Text>
+              <Text style={{ color: '#666', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>#{invoiceData?.invoiceNumber || 'DRAFT'}</Text>
             </div>
           </div>
 
           {/* Bill To Section */}
           <Row gutter={40} style={{ marginBottom: 40 }}>
             <Col span={12}>
-              <Title level={5}>Bill To:</Title>
-              <Text strong style={{ display: 'block' }}>
+              <Title level={5} style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Bill To:</Title>
+              <Text strong style={{ display: 'block', color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 {invoiceData?.customer?.name}
               </Text>
-              {invoiceData?.customer?.email && <Text>{invoiceData.customer.email}</Text>}
+              {invoiceData?.customer?.email && <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{invoiceData.customer.email}</Text>}
               {invoiceData?.customer?.phone && (
-                <Text style={{ display: 'block' }}>{invoiceData.customer.phone}</Text>
+                <Text style={{ display: 'block', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{invoiceData.customer.phone}</Text>
               )}
               {invoiceData?.customer?.billingAddressLine1 && (
                 <>
-                  <Text style={{ display: 'block' }}>{invoiceData.customer.billingAddressLine1}</Text>
+                  <Text style={{ display: 'block', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{invoiceData.customer.billingAddressLine1}</Text>
                   {invoiceData?.customer?.billingCity && invoiceData?.customer?.billingCountry && (
-                    <Text style={{ display: 'block' }}>
+                    <Text style={{ display: 'block', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                       {invoiceData.customer.billingCity}, {invoiceData.customer.billingCountry}
                     </Text>
                   )}
@@ -450,21 +450,21 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
             </Col>
             <Col span={12}>
               <div style={{ marginBottom: 16 }}>
-                <Text strong>Invoice Date: </Text>
-                <Text>{dayjs(invoiceData?.invoiceDate).format('MMM DD, YYYY')}</Text>
+                <Text strong style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Invoice Date: </Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{dayjs(invoiceData?.invoiceDate).format('MMM DD, YYYY')}</Text>
               </div>
               <div>
-                <Text strong>Due Date: </Text>
-                <Text>{dayjs(invoiceData?.dueDate).format('MMM DD, YYYY')}</Text>
+                <Text strong style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Due Date: </Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{dayjs(invoiceData?.dueDate).format('MMM DD, YYYY')}</Text>
               </div>
             </Col>
           </Row>
 
           {/* Invoice Items Table */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 40 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 40, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #d9d9d9' }}>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #d9d9d9', color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   Description
                 </th>
                 <th
@@ -473,6 +473,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                     textAlign: 'center',
                     borderBottom: '2px solid #d9d9d9',
                     width: '100px',
+                    color: '#000',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif"
                   }}
                 >
                   Quantity
@@ -483,6 +485,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                     textAlign: 'right',
                     borderBottom: '2px solid #d9d9d9',
                     width: '120px',
+                    color: '#000',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif"
                   }}
                 >
                   Unit Price
@@ -493,6 +497,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                     textAlign: 'right',
                     borderBottom: '2px solid #d9d9d9',
                     width: '120px',
+                    color: '#000',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif"
                   }}
                 >
                   Amount
@@ -502,7 +508,7 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
             <tbody>
               {invoiceData?.lines?.map((line: any, index: number) => (
                 <tr key={index}>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #f0f0f0', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     {line.description}
                   </td>
                   <td
@@ -510,17 +516,19 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                       padding: '12px',
                       textAlign: 'center',
                       borderBottom: '1px solid #f0f0f0',
+                      color: '#333',
+                      fontFamily: "'Plus Jakarta Sans', sans-serif"
                     }}
                   >
                     {line.quantity}
                   </td>
                   <td
-                    style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #f0f0f0' }}
+                    style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                   >
                     ${line.unitPrice.toFixed(2)}
                   </td>
                   <td
-                    style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #f0f0f0' }}
+                    style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                   >
                     ${line.amount.toFixed(2)}
                   </td>
@@ -540,8 +548,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                   borderBottom: '1px solid #f0f0f0',
                 }}
               >
-                <Text>Subtotal:</Text>
-                <Text>${invoiceData?.subtotal.toFixed(2)}</Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Subtotal:</Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>${invoiceData?.subtotal.toFixed(2)}</Text>
               </div>
               <div
                 style={{
@@ -551,8 +559,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                   borderBottom: '1px solid #f0f0f0',
                 }}
               >
-                <Text>Tax (10%):</Text>
-                <Text>${invoiceData?.tax.toFixed(2)}</Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Tax (10%):</Text>
+                <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>${invoiceData?.tax.toFixed(2)}</Text>
               </div>
               <div
                 style={{
@@ -562,10 +570,10 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
                   borderTop: '2px solid #2c3e7d',
                 }}
               >
-                <Text strong style={{ fontSize: 18 }}>
+                <Text strong style={{ fontSize: 18, color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   Total:
                 </Text>
-                <Text strong style={{ fontSize: 18, color: '#2c3e7d' }}>
+                <Text strong style={{ fontSize: 18, color: '#2c3e7d', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   ${invoiceData?.total.toFixed(2)}
                 </Text>
               </div>
@@ -575,8 +583,8 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
           {/* Notes */}
           {invoiceData?.notes && (
             <div>
-              <Title level={5}>Notes:</Title>
-              <Text>{invoiceData.notes}</Text>
+              <Title level={5} style={{ color: '#000', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Notes:</Title>
+              <Text style={{ color: '#333', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{invoiceData.notes}</Text>
             </div>
           )}
 
@@ -589,7 +597,7 @@ const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({ visible, onClose, onSuc
               textAlign: 'center',
             }}
           >
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text style={{ fontSize: 12, color: '#666', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Thank you for your business!
             </Text>
           </div>

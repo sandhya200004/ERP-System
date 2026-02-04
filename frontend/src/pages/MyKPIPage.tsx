@@ -646,7 +646,7 @@ const MyKPIPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, background: '#000000', minHeight: '100vh' }}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card>

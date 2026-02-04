@@ -35,6 +35,7 @@ import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.mod
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { AdminModule } from './modules/admin/admin.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
@@ -86,6 +87,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     WarehouseModule,
     InventoryModule,
     SettingsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

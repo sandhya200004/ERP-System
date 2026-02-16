@@ -1,17 +1,61 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global validation pipe
+  // ========================================
+  // SECURITY: Helmet - Secure HTTP Headers
+  // ========================================
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Swagger needs unsafe-eval
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      xssFilter: true,
+    }),
+  );
+
+  // ========================================
+  // SECURITY: Cookie Parser (for session management)
+  // ========================================
+  app.use(cookieParser());
+
+  // ========================================
+  // SECURITY: Global Exception Filter
+  // Prevents leaking sensitive error details
+  // ========================================
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // ========================================
+  // SECURITY: Global Validation Pipe
+  // Prevents mass-assignment attacks
+  // ========================================
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Strip properties not in DTO
+      forbidNonWhitelisted: true, // Throw error if unknown properties sent
+      transform: true, // Auto-transform payloads to DTO instances
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 

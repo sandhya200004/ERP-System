@@ -990,6 +990,14 @@ enum audit_action {
   status_change
   login
   logout
+  login_failed
+  unauthorized_access
+  permission_denied
+  data_export
+  password_change
+  role_change
+  system_down
+  error
   enable_feature
   disable_feature
   bulk_update

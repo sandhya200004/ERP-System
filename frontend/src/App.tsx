@@ -23,6 +23,8 @@ import RegisterPage from './pages/RegisterPage';
 import LeadsPage from './pages/LeadsPage';
 import ProposalsPage from './pages/ProposalsPage';
 import ExpensesPage from './pages/ExpensesPage';
+import SecurityDashboard from './pages/admin/SecurityDashboard';
+import StatusPage from './pages/StatusPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -66,6 +68,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route
               path="/"
               element={
@@ -92,6 +95,7 @@ function App() {
               <Route path="leads" element={<LeadsPage />} />
               <Route path="proposals" element={<ProposalsPage />} />
               <Route path="expenses" element={<ExpensesPage />} />
+              <Route path="admin/security" element={<SecurityDashboard />} />
             </Route>
           </Routes>
         </BrowserRouter>

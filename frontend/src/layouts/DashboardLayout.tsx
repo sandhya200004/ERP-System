@@ -186,6 +186,13 @@ const DashboardLayout: React.FC = () => {
         onClick: () => navigate('/feature-control'),
         roles: ['ADMIN'],
       },
+      {
+        key: '/admin/security',
+        icon: <SecurityScanOutlined />,
+        label: 'Security Dashboard',
+        onClick: () => navigate('/admin/security'),
+        roles: ['ADMIN'],
+      },
     ];
 
     // Filter items based on user role

@@ -13,13 +13,23 @@
 
 ---
 
+### **System Administrators**
+
+| #  | Name                | Designation           | Email                            | Employee ID  | Password           | Role |
+|----|---------------------|-----------------------|----------------------------------|--------------|--------------------| -----|
+| 1  | Admin 001           | System Administrator  | admin001@triverse.com            | ADMIN001     | ADMIN001@2025      | CEO  |
+
+> **Note:** This is a dedicated system administrator account with full privileges.
+
+---
+
 ### **Executive Team**
 
 | #  | Name                | Designation           | Email                            | Employee ID  | Password           | Role |
 |----|---------------------|-----------------------|----------------------------------|--------------|--------------------| -----|
-| 1  | Charudatta Warke    | CEO & Founder         | charudatta.warke@triverse.com    | TS2025001    | TS2025001@2025     | CEO  |
-| 2  | Veeraj Matnale      | Co-founder & CTO      | veeraj.matnale@triverse.com      | TS2025002    | TS2025002@2025     | CTO  |
-| 3  | Omkar Kale          | CMO & Head Operation  | omkar.kale@triverse.com          | TS2025003    | TS2025003@2025     | CMO  |
+| 2  | Charudatta Warke    | CEO & Founder         | charudatta.warke@triverse.com    | TS2025001    | TS2025001@2025     | CEO  |
+| 3  | Veeraj Matnale      | Co-founder & CTO      | veeraj.matnale@triverse.com      | TS2025002    | TS2025002@2025     | CTO  |
+| 4  | Omkar Kale          | CMO & Head Operation  | omkar.kale@triverse.com          | TS2025003    | TS2025003@2025     | CMO  |
 
 ---
 
@@ -27,7 +37,7 @@
 
 | #  | Name              | Designation     | Email                           | Employee ID  | Password           | Role    |
 |----|-------------------|-----------------|---------------------------------|--------------|--------------------| --------|
-| 4  | HR Department     | HR              | hr@triverse.com                 | TSDM2025001  | TSDM2025001@2025   | HR      |
+| 5  | HR Department     | HR              | hr@triverse.com                 | TSDM2025001  | TSDM2025001@2025   | HR      |
 | 7  | Shruti Jadhav     | Lead Manager    | shruti.jadhav@triverse.com      | TSDM2025004  | TSDM2025004@2025   | MANAGER |
 | 9  | Pratiksha Kharat  | Lead Manager    | pratiksha.kharat@triverse.com   | TSDM2025006  | TSDM2025006@2025   | MANAGER |
 

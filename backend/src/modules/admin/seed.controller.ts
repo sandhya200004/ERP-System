@@ -1,6 +1,6 @@
 import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { PrismaService } from '../../services/prisma.service';
+import { PrismaService } from '../../shared/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
@@ -30,7 +30,7 @@ export class SeedController {
           id: randomUUID(),
           name: 'TriVerse',
           email: 'contact@triverse.com',
-          currency_code: 'INR',
+          default_currency_code: 'INR',
           status: 'active',
           updated_at: new Date(),
         },
@@ -99,12 +99,11 @@ export class SeedController {
           data: {
             id: randomUUID(),
             user_id: user.id,
-            company_id: company.id,
             employee_id: emp.empId,
             designation: emp.designation,
             department: emp.dept,
             role: emp.role as any,
-            updated_at: new Date(),
+            date_of_joining: new Date(),
           },
         });
       }

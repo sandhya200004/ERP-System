@@ -1,11 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 // Shared
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { LoggerModule } from './shared/logger/logger.module';
 import { HealthModule } from './shared/health/health.module';
+import { CaslModule } from './shared/casl/casl.module';
+import { EncryptionModule } from './shared/encryption/encryption.module';
+import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 // Core Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -36,6 +41,7 @@ import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { SecurityModule } from './modules/security/security.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
@@ -46,18 +52,29 @@ import { AdminModule } from './modules/admin/admin.module';
       envFilePath: '.env',
     }),
 
-    // Rate limiting
+    // Scheduled tasks (cron jobs)
+    ScheduleModule.forRoot(),
+
+    // Rate limiting - Strict limits for auth, lenient for others
     ThrottlerModule.forRoot([
       {
+        name: 'default',
         ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
+        limit: 100, // 100 requests per minute (default)
+      },
+      {
+        name: 'auth',
+        ttl: 60000, // 1 minute
+        limit: 5, // 5 login attempts per minute (strict)
       },
     ]),
 
-    // Shared modules
+    // Shared security modules
     PrismaModule,
     LoggerModule,
     HealthModule,
+    CaslModule, // CASL Authorization
+    EncryptionModule, // Data encryption
     
     // Feature modules
     AuthModule,
@@ -87,7 +104,20 @@ import { AdminModule } from './modules/admin/admin.module';
     WarehouseModule,
     InventoryModule,
     SettingsModule,
+    SecurityModule,
     AdminModule,
+  ],
+  providers: [
+    // Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    // Global audit trail interceptor
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
   ],
 })
 export class AppModule {}

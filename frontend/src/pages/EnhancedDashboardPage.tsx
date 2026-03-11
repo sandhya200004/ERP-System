@@ -422,7 +422,7 @@ const EnhancedDashboardPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
+    <div className="page-transition-wrapper" style={{ padding: '24px', background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
       {/* Header with Period Selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' }}>
         <div>

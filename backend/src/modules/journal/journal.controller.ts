@@ -20,7 +20,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Journal & Ledger')
 @ApiBearerAuth()
-@Controller('api/v1/journal')
+@Controller('journal')
 @UseGuards(JwtAuthGuard)
 export class JournalController {
   constructor(private readonly journalService: JournalService) {}

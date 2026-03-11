@@ -118,7 +118,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto', background: '#000000', minHeight: '100vh' }}>
+    <div className="page-transition-wrapper" style={{ padding: '24px', maxWidth: 1200, margin: '0 auto', background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
       <Title level={2}>
         <UserOutlined style={{ marginRight: 12, color: '#667eea' }} />
         My Profile

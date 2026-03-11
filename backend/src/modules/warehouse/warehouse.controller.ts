@@ -17,7 +17,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Warehouses')
 @ApiBearerAuth()
-@Controller('api/v1/warehouses')
+@Controller('warehouses')
 @UseGuards(JwtAuthGuard)
 export class WarehouseController {
   constructor(private readonly warehouseService: WarehouseService) {}

@@ -142,7 +142,7 @@ const QuotesPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
+    <div className="page-transition-wrapper" style={{ padding: '24px', background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <Title level={2} style={{ margin: 0 }}>Quotes</Title>

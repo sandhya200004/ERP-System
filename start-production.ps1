@@ -14,7 +14,7 @@ $ErrorActionPreference = "Continue"
 
 # Check if build artifacts exist
 Write-Host "Checking build artifacts..." -ForegroundColor Yellow
-if (-not (Test-Path "$projectRoot\backend\dist\main.js")) {
+if (-not (Test-Path "$projectRoot\backend\dist\src\main.js")) {
     Write-Host "❌ Backend build not found. Run: npm run build in backend folder" -ForegroundColor Red
     exit 1
 }
@@ -49,7 +49,7 @@ Write-Host ""
 Write-Host "Starting Backend (Production Mode)..." -ForegroundColor Yellow
 Set-Location "$projectRoot\backend"
 $env:NODE_ENV = "production"
-$backendProc = Start-Process -NoNewWindow -FilePath "node" -ArgumentList "dist/main.js" -PassThru -RedirectStandardOutput "$projectRoot\backend\production.log" -RedirectStandardError "$projectRoot\backend\production-error.log"
+$backendProc = Start-Process -NoNewWindow -FilePath "node" -ArgumentList "dist/src/main.js" -PassThru -RedirectStandardOutput "$projectRoot\backend\production.log" -RedirectStandardError "$projectRoot\backend\production-error.log"
 Start-Sleep -Seconds 3
 
 if ($backendProc.HasExited) {

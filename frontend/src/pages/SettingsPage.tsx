@@ -134,7 +134,7 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
+    <div className="page-transition-wrapper" style={{ padding: '24px', background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>
           <SettingOutlined /> Settings

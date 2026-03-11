@@ -50,9 +50,13 @@ export class AuditInterceptor implements NestInterceptor {
             // Determine action
             const action = this.mapMethodToAction(method);
 
+            // Platform admins are in a separate table, so don't log their user_id
+            // to avoid foreign key constraint violations
+            const userId = url.includes('/platform-admin') ? null : (user?.id || null);
+
             // Log to database (async - don't block response)
             await this.logAuditTrail({
-              userId: user?.id || null,
+              userId,
               action,
               entityType,
               entityId,
@@ -77,8 +81,11 @@ export class AuditInterceptor implements NestInterceptor {
           const duration = Date.now() - startTime;
 
           try {
+            // Platform admins are in a separate table, so don't log their user_id
+            const userId = url.includes('/platform-admin') ? null : (user?.id || null);
+
             await this.logAuditTrail({
-              userId: user?.id || null,
+              userId,
               action: 'ERROR',
               entityType: this.extractEntityType(url),
               entityId: null,

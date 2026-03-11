@@ -136,7 +136,7 @@ const InvoicesPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <div className="page-transition-wrapper" style={{ animation: 'fadeIn 0.5s ease-in' }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Title level={2}>Invoices</Title>

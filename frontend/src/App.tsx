@@ -25,6 +25,16 @@ import ProposalsPage from './pages/ProposalsPage';
 import ExpensesPage from './pages/ExpensesPage';
 import SecurityDashboard from './pages/admin/SecurityDashboard';
 import StatusPage from './pages/StatusPage';
+import VendorsPage from './pages/VendorsPage';
+import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
+import GoodsReceiptsPage from './pages/GoodsReceiptsPage';
+import SupplierInvoicesPage from './pages/SupplierInvoicesPage';
+import WarehousesPage from './pages/WarehousesPage';
+import InventoryPage from './pages/InventoryPage';
+import ChartOfAccountsPage from './pages/ChartOfAccountsPage';
+import JournalEntriesPage from './pages/JournalEntriesPage';
+import PlatformAdminLogin from './pages/platform-admin/PlatformAdminLogin';
+import PlatformAdminDashboard from './pages/platform-admin/PlatformAdminDashboard';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -69,6 +79,11 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/status" element={<StatusPage />} />
+            
+            {/* Platform Admin Routes */}
+            <Route path="/platform-admin/login" element={<PlatformAdminLogin />} />
+            <Route path="/platform-admin/dashboard" element={<PlatformAdminDashboard />} />
+            
             <Route
               path="/"
               element={
@@ -96,6 +111,17 @@ function App() {
               <Route path="proposals" element={<ProposalsPage />} />
               <Route path="expenses" element={<ExpensesPage />} />
               <Route path="admin/security" element={<SecurityDashboard />} />
+              {/* Procurement & Supply Chain */}
+              <Route path="vendors" element={<VendorsPage />} />
+              <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
+              <Route path="goods-receipts" element={<GoodsReceiptsPage />} />
+              <Route path="supplier-invoices" element={<SupplierInvoicesPage />} />
+              {/* Inventory & Warehouse */}
+              <Route path="warehouses" element={<WarehousesPage />} />
+              <Route path="inventory" element={<InventoryPage />} />
+              {/* Accounting & Finance */}
+              <Route path="chart-of-accounts" element={<ChartOfAccountsPage />} />
+              <Route path="journal-entries" element={<JournalEntriesPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

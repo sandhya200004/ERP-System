@@ -37,9 +37,16 @@ export function defineAbilityFor(user: User): AppAbility {
   const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
   // ====================
+  // ADMIN - System Administrator (Full Access)
+  // ====================
+  if (user.role === 'ADMIN') {
+    can('manage', 'all'); // Full system access
+  }
+
+  // ====================
   // CEO - Full System Access
   // ====================
-  if (user.role === 'CEO') {
+  else if (user.role === 'CEO') {
     can('manage', 'all'); // Can do everything
   }
 

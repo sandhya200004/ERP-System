@@ -18,6 +18,30 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: any) {
+    // Handle platform admin authentication
+    if (payload.is_platform_admin) {
+      const platformAdmin = await this.prisma.platform_admins.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!platformAdmin || !platformAdmin.is_active) {
+        throw new UnauthorizedException('Platform admin not found or inactive');
+      }
+
+      return {
+        user_id: platformAdmin.id,
+        userId: platformAdmin.id,
+        id: platformAdmin.id,
+        email: platformAdmin.email,
+        firstName: platformAdmin.first_name,
+        lastName: platformAdmin.last_name,
+        is_platform_admin: true,
+        is_super_admin: platformAdmin.is_super_admin,
+        role: 'PLATFORM_ADMIN',
+      };
+    }
+
+    // Handle regular user authentication
     const user = await this.prisma.users.findUnique({
       where: { id: payload.sub },
       include: {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -11,6 +11,8 @@ import { HealthModule } from './shared/health/health.module';
 import { CaslModule } from './shared/casl/casl.module';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
+import { TenantMiddleware } from './shared/middleware/tenant.middleware';
+import { PlatformAdminGuard } from './shared/guards/platform-admin.guard';
 
 // Core Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -37,11 +39,14 @@ import { KpiModule } from './modules/kpi/kpi.module';
 import { KpiTasksModule } from './modules/kpi-tasks/kpi-tasks.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
+import { GoodsReceiptModule } from './modules/goods-receipt/goods-receipt.module';
+import { SupplierInvoiceModule } from './modules/supplier-invoice/supplier-invoice.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SecurityModule } from './modules/security/security.module';
+import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
@@ -101,11 +106,14 @@ import { SecurityModule } from './modules/security/security.module';
     KpiTasksModule,
     VendorModule,
     PurchaseOrderModule,
+    GoodsReceiptModule,
+    SupplierInvoiceModule,
     WarehouseModule,
     InventoryModule,
     SettingsModule,
     SecurityModule,
     AdminModule,
+    PlatformAdminModule,
   ],
   providers: [
     // Global rate limiting guard
@@ -120,4 +128,16 @@ import { SecurityModule } from './modules/security/security.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply tenant middleware to all routes except health and public endpoints
+    consumer
+      .apply(TenantMiddleware)
+      .exclude(
+        { path: 'health', method: RequestMethod.ALL },
+        { path: 'health/(.*)', method: RequestMethod.ALL },
+        { path: 'public/(.*)', method: RequestMethod.ALL },
+      )
+      .forRoutes('*');
+  }
+}

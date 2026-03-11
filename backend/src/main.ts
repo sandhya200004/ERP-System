@@ -59,22 +59,32 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - allow local network and production origins
+  // CORS - allow local network, production origins, and multi-tenant subdomains
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or Postman)
       if (!origin) return callback(null, true);
       
-      // Allow localhost and local network IPs on any port
-      if (
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:') ||
-        origin.startsWith('http://192.168.') ||
-        origin.startsWith('http://10.') ||
-        origin.endsWith('.vercel.app') || // Vercel deployments
-        origin.endsWith('.onrender.com') || // Render deployments
-        origin === process.env.FRONTEND_URL // Custom domain
-      ) {
+      const allowedDomains = [
+        'localhost',
+        '127.0.0.1',
+        '192.168.',
+        '10.',
+        '.vercel.app',
+        '.onrender.com',
+        process.env.BASE_DOMAIN || 'myerp.com', // Main domain for multi-tenant subdomains
+      ];
+
+      // Check if origin matches any allowed domain
+      const isAllowed = allowedDomains.some((domain) => {
+        if (domain.startsWith('.')) {
+          // For wildcards like .vercel.app, .myerp.com
+          return origin.includes(domain);
+        }
+        return origin.includes(domain);
+      });
+
+      if (isAllowed || origin === process.env.FRONTEND_URL) {
         return callback(null, true);
       }
       
@@ -82,7 +92,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tenant-Subdomain'],
   });
 
   // API prefix
@@ -99,6 +109,25 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+
+  // Root path welcome endpoint
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (req: any, res: any) => {
+    res.json({
+      name: 'TriVerse ERP API',
+      version: '1.0.0',
+      description: 'Enterprise Resource Planning System - Multi-tenant SaaS Platform',
+      status: 'running',
+      timestamp: new Date().toISOString(),
+      endpoints: {
+        documentation: '/api/docs',
+        health: '/health',
+        platformAdmin: '/api/v1/platform-admin',
+        authentication: '/api/v1/auth',
+        api: '/api/v1',
+      },
+    });
+  });
 
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');

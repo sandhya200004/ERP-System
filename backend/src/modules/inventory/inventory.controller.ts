@@ -21,7 +21,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
-@Controller('api/v1/inventory')
+@Controller('inventory')
 @UseGuards(JwtAuthGuard)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}

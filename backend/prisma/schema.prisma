@@ -148,6 +148,19 @@ model companies {
   default_currency_code String                 @default("USD") @db.VarChar(3)
   status                company_status         @default(active)
   settings              Json?                  @default("{}")
+  
+  // Multi-Tenant SaaS Fields
+  subdomain             String?                @unique @db.VarChar(50)
+  subscription_plan     subscription_plan      @default(trial)
+  max_users             Int                    @default(5)
+  max_branches          Int                    @default(1)
+  max_storage_gb        Int                    @default(5)
+  trial_ends_at         DateTime?
+  subscription_starts_at DateTime?
+  subscription_ends_at  DateTime?
+  suspended_at          DateTime?
+  suspension_reason     String?
+  
   created_at            DateTime               @default(now())
   updated_at            DateTime
   deleted_at            DateTime?
@@ -176,6 +189,9 @@ model companies {
   vendors               vendors[]
   purchase_orders       purchase_orders[]
   goods_receipts        goods_receipts[]
+  supplier_invoices     supplier_invoices[]
+  three_way_matches     three_way_matches[]
+  invoice_payments      invoice_payments[]
   warehouses            warehouses[]
   stock_levels          stock_levels[]
   stock_movements       stock_movements[]
@@ -430,31 +446,32 @@ model item_taxes {
 }
 
 model items {
-  id                    String                 @id @db.Uuid
-  company_id            String                 @db.Uuid
-  item_number           String                 @db.VarChar(50)
-  name                  String                 @db.VarChar(255)
-  description           String?
-  item_type             item_type              @default(goods)
-  unit_price            Decimal                @db.Decimal(15, 2)
-  cost_price            Decimal?               @db.Decimal(15, 2)
-  default_currency_code String                 @db.VarChar(3)
-  unit_of_measure       String?                @db.VarChar(50)
-  sku                   String?                @db.VarChar(100)
-  barcode               String?                @db.VarChar(100)
-  is_active             Boolean                @default(true)
-  created_at            DateTime               @default(now())
-  updated_at            DateTime
-  deleted_at            DateTime?
-  invoice_lines         invoice_lines[]
-  item_taxes            item_taxes[]
-  companies             companies              @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  currencies            currencies             @relation(fields: [default_currency_code], references: [code])
-  quote_lines           quote_lines[]
-  purchase_order_lines  purchase_order_lines[]
-  goods_receipt_lines   goods_receipt_lines[]
-  stock_levels          stock_levels[]
-  stock_movements       stock_movements[]
+  id                     String                   @id @db.Uuid
+  company_id             String                   @db.Uuid
+  item_number            String                   @db.VarChar(50)
+  name                   String                   @db.VarChar(255)
+  description            String?
+  item_type              item_type                @default(goods)
+  unit_price             Decimal                  @db.Decimal(15, 2)
+  cost_price             Decimal?                 @db.Decimal(15, 2)
+  default_currency_code  String                   @db.VarChar(3)
+  unit_of_measure        String?                  @db.VarChar(50)
+  sku                    String?                  @db.VarChar(100)
+  barcode                String?                  @db.VarChar(100)
+  is_active              Boolean                  @default(true)
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime
+  deleted_at             DateTime?
+  invoice_lines          invoice_lines[]
+  item_taxes             item_taxes[]
+  companies              companies                @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  currencies             currencies               @relation(fields: [default_currency_code], references: [code])
+  quote_lines            quote_lines[]
+  purchase_order_lines   purchase_order_lines[]
+  goods_receipt_lines    goods_receipt_lines[]
+  supplier_invoice_lines supplier_invoice_lines[]
+  stock_levels           stock_levels[]
+  stock_movements        stock_movements[]
 
   @@unique([company_id, item_number])
   @@index([company_id, deleted_at])
@@ -795,13 +812,37 @@ model users {
   task_audit_logs                                    task_audit_logs[]
   task_proofs                                        task_proofs[]
   user_roles                                         user_roles[]
-  purchase_orders_created                            purchase_orders[]  @relation("po_created_by")
-  purchase_orders_approved                           purchase_orders[]  @relation("po_approved_by")
+  purchase_orders_created                            purchase_orders[]      @relation("po_created_by")
+  purchase_orders_approved                           purchase_orders[]      @relation("po_approved_by")
   goods_receipts                                     goods_receipts[]
+  supplier_invoices_created                          supplier_invoices[]    @relation("invoice_created_by")
+  supplier_invoices_approved                         supplier_invoices[]    @relation("invoice_approved_by")
+  three_way_matches                                  three_way_matches[]
+  invoice_payments                                   invoice_payments[]
   stock_movements                                    stock_movements[]
 
   @@index([email, deleted_at])
   @@index([status])
+}
+
+model platform_admins {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.VarChar(255)
+  password_hash    String    @db.VarChar(255)
+  first_name       String    @db.VarChar(100)
+  last_name        String    @db.VarChar(100)
+  phone            String?   @db.VarChar(50)
+  avatar_url       String?
+  is_super_admin   Boolean   @default(true)
+  is_active        Boolean   @default(true)
+  last_login_at    DateTime?
+  email_verified_at DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  deleted_at       DateTime?
+  
+  @@index([email, deleted_at])
+  @@index([is_active])
 }
 
 model notifications {
@@ -1012,6 +1053,16 @@ enum company_status {
   active
   inactive
   trial
+  suspended
+  cancelled
+}
+
+enum subscription_plan {
+  trial
+  starter
+  professional
+  enterprise
+  custom
 }
 
 enum customer_type {
@@ -1027,6 +1078,9 @@ enum invoice_status {
   paid
   overdue
   cancelled
+  pending
+  approved
+  rejected
 }
 
 enum item_type {
@@ -1054,6 +1108,10 @@ enum payment_status {
   completed
   failed
   cancelled
+  unpaid
+  partially_paid
+  paid
+  overdue
 }
 
 enum quote_status {
@@ -1125,31 +1183,32 @@ enum task_submission_status {
 // PURCHASE MANAGEMENT MODELS
 
 model vendors {
-  id                     String            @id @default(uuid()) @db.Uuid
-  company_id             String            @db.Uuid
-  vendor_number          String            @db.VarChar(50)
-  name                   String            @db.VarChar(255)
-  contact_person         String?           @db.VarChar(255)
-  email                  String?           @db.VarChar(255)
-  phone                  String?           @db.VarChar(50)
-  tax_id                 String?           @db.VarChar(100)
-  address_line1          String?           @db.VarChar(255)
-  address_line2          String?           @db.VarChar(255)
-  city                   String?           @db.VarChar(100)
-  state                  String?           @db.VarChar(100)
-  postal_code            String?           @db.VarChar(20)
-  country                String?           @db.VarChar(100)
-  default_currency_code  String?           @db.VarChar(3)
-  payment_terms_days     Int?              @default(30)
-  credit_limit           Decimal?          @db.Decimal(15, 2)
-  notes                  String?
-  is_active              Boolean           @default(true)
-  created_at             DateTime          @default(now())
-  updated_at             DateTime          @updatedAt
-  deleted_at             DateTime?
-  companies              companies         @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  purchase_orders        purchase_orders[]
-  goods_receipts         goods_receipts[]
+  id                    String              @id @default(uuid()) @db.Uuid
+  company_id            String              @db.Uuid
+  vendor_number         String              @db.VarChar(50)
+  name                  String              @db.VarChar(255)
+  contact_person        String?             @db.VarChar(255)
+  email                 String?             @db.VarChar(255)
+  phone                 String?             @db.VarChar(50)
+  tax_id                String?             @db.VarChar(100)
+  address_line1         String?             @db.VarChar(255)
+  address_line2         String?             @db.VarChar(255)
+  city                  String?             @db.VarChar(100)
+  state                 String?             @db.VarChar(100)
+  postal_code           String?             @db.VarChar(20)
+  country               String?             @db.VarChar(100)
+  default_currency_code String?             @db.VarChar(3)
+  payment_terms_days    Int?                @default(30)
+  credit_limit          Decimal?            @db.Decimal(15, 2)
+  notes                 String?
+  is_active             Boolean             @default(true)
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  deleted_at            DateTime?
+  companies             companies           @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  purchase_orders       purchase_orders[]
+  goods_receipts        goods_receipts[]
+  supplier_invoices     supplier_invoices[]
 
   @@unique([company_id, vendor_number])
   @@index([company_id, deleted_at])
@@ -1182,6 +1241,8 @@ model purchase_orders {
   approver          users?                 @relation("po_approved_by", fields: [approved_by], references: [id])
   po_lines          purchase_order_lines[]
   goods_receipts    goods_receipts[]
+  supplier_invoices supplier_invoices[]
+  three_way_matches three_way_matches[]
 
   @@unique([company_id, po_number])
   @@index([company_id, deleted_at])
@@ -1190,42 +1251,44 @@ model purchase_orders {
 }
 
 model purchase_order_lines {
-  id               String          @id @default(uuid()) @db.Uuid
-  po_id            String          @db.Uuid
-  line_number      Int
-  item_id          String?         @db.Uuid
-  description      String
-  quantity         Decimal         @db.Decimal(10, 2)
-  unit_price       Decimal         @db.Decimal(15, 2)
-  tax_amount       Decimal         @default(0) @db.Decimal(15, 2)
-  total            Decimal         @db.Decimal(15, 2)
-  received_qty     Decimal         @default(0) @db.Decimal(10, 2)
-  created_at       DateTime        @default(now())
-  updated_at       DateTime        @updatedAt
-  purchase_orders  purchase_orders @relation(fields: [po_id], references: [id], onDelete: Cascade)
-  items            items?          @relation(fields: [item_id], references: [id])
+  id              String          @id @default(uuid()) @db.Uuid
+  po_id           String          @db.Uuid
+  line_number     Int
+  item_id         String?         @db.Uuid
+  description     String
+  quantity        Decimal         @db.Decimal(10, 2)
+  unit_price      Decimal         @db.Decimal(15, 2)
+  tax_amount      Decimal         @default(0) @db.Decimal(15, 2)
+  total           Decimal         @db.Decimal(15, 2)
+  received_qty    Decimal         @default(0) @db.Decimal(10, 2)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  purchase_orders purchase_orders @relation(fields: [po_id], references: [id], onDelete: Cascade)
+  items           items?          @relation(fields: [item_id], references: [id])
 
   @@unique([po_id, line_number])
   @@index([po_id])
 }
 
 model goods_receipts {
-  id               String               @id @default(uuid()) @db.Uuid
-  company_id       String               @db.Uuid
-  grn_number       String               @db.VarChar(50)
-  po_id            String?              @db.Uuid
-  vendor_id        String               @db.Uuid
-  receipt_date     DateTime             @db.Date
-  status           grn_status           @default(draft)
-  notes            String?
-  received_by      String               @db.Uuid
-  created_at       DateTime             @default(now())
-  updated_at       DateTime             @updatedAt
-  companies        companies            @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  purchase_orders  purchase_orders?     @relation(fields: [po_id], references: [id])
-  vendors          vendors              @relation(fields: [vendor_id], references: [id])
-  users            users                @relation(fields: [received_by], references: [id])
-  grn_lines        goods_receipt_lines[]
+  id                String                @id @default(uuid()) @db.Uuid
+  company_id        String                @db.Uuid
+  grn_number        String                @db.VarChar(50)
+  po_id             String?               @db.Uuid
+  vendor_id         String                @db.Uuid
+  receipt_date      DateTime              @db.Date
+  status            grn_status            @default(draft)
+  notes             String?
+  received_by       String                @db.Uuid
+  created_at        DateTime              @default(now())
+  updated_at        DateTime              @updatedAt
+  companies         companies             @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  purchase_orders   purchase_orders?      @relation(fields: [po_id], references: [id])
+  vendors           vendors               @relation(fields: [vendor_id], references: [id])
+  users             users                 @relation(fields: [received_by], references: [id])
+  grn_lines         goods_receipt_lines[]
+  supplier_invoices supplier_invoices[]
+  three_way_matches three_way_matches[]
 
   @@unique([company_id, grn_number])
   @@index([company_id])
@@ -1234,24 +1297,137 @@ model goods_receipts {
 }
 
 model goods_receipt_lines {
-  id              String         @id @default(uuid()) @db.Uuid
-  grn_id          String         @db.Uuid
-  line_number     Int
-  item_id         String?        @db.Uuid
-  description     String
-  ordered_qty     Decimal?       @db.Decimal(10, 2)
-  received_qty    Decimal        @db.Decimal(10, 2)
-  warehouse_id    String?        @db.Uuid
-  location        String?        @db.VarChar(100)
-  notes           String?
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
-  goods_receipts  goods_receipts @relation(fields: [grn_id], references: [id], onDelete: Cascade)
-  items           items?         @relation(fields: [item_id], references: [id])
-  warehouses      warehouses?    @relation(fields: [warehouse_id], references: [id])
+  id             String         @id @default(uuid()) @db.Uuid
+  grn_id         String         @db.Uuid
+  line_number    Int
+  item_id        String?        @db.Uuid
+  description    String
+  ordered_qty    Decimal?       @db.Decimal(10, 2)
+  received_qty   Decimal        @db.Decimal(10, 2)
+  warehouse_id   String?        @db.Uuid
+  location       String?        @db.VarChar(100)
+  notes          String?
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  goods_receipts goods_receipts @relation(fields: [grn_id], references: [id], onDelete: Cascade)
+  items          items?         @relation(fields: [item_id], references: [id])
+  warehouses     warehouses?    @relation(fields: [warehouse_id], references: [id])
 
   @@unique([grn_id, line_number])
   @@index([grn_id])
+}
+
+model supplier_invoices {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  company_id            String                   @db.Uuid
+  invoice_number        String                   @db.VarChar(50)
+  vendor_invoice_number String                   @db.VarChar(100)
+  po_id                 String?                  @db.Uuid
+  grn_id                String?                  @db.Uuid
+  vendor_id             String                   @db.Uuid
+  invoice_date          DateTime                 @db.Date
+  due_date              DateTime                 @db.Date
+  currency_code         String                   @default("USD") @db.VarChar(3)
+  subtotal              Decimal                  @default(0) @db.Decimal(15, 2)
+  tax_total             Decimal                  @default(0) @db.Decimal(15, 2)
+  total                 Decimal                  @default(0) @db.Decimal(15, 2)
+  status                invoice_status           @default(pending)
+  payment_status        payment_status           @default(unpaid)
+  notes                 String?
+  created_by            String                   @db.Uuid
+  approved_by           String?                  @db.Uuid
+  approved_at           DateTime?
+  created_at            DateTime                 @default(now())
+  updated_at            DateTime                 @updatedAt
+  deleted_at            DateTime?
+  companies             companies                @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  purchase_orders       purchase_orders?         @relation(fields: [po_id], references: [id])
+  goods_receipts        goods_receipts?          @relation(fields: [grn_id], references: [id])
+  vendors               vendors                  @relation(fields: [vendor_id], references: [id])
+  users                 users                    @relation("invoice_created_by", fields: [created_by], references: [id])
+  approver              users?                   @relation("invoice_approved_by", fields: [approved_by], references: [id])
+  invoice_lines         supplier_invoice_lines[]
+  three_way_matches     three_way_matches?
+  payments              invoice_payments[]
+
+  @@unique([company_id, invoice_number])
+  @@index([company_id, deleted_at])
+  @@index([vendor_id])
+  @@index([po_id])
+  @@index([grn_id])
+  @@index([status])
+}
+
+model supplier_invoice_lines {
+  id                String            @id @default(uuid()) @db.Uuid
+  invoice_id        String            @db.Uuid
+  line_number       Int
+  po_line_id        String?           @db.Uuid
+  grn_line_id       String?           @db.Uuid
+  item_id           String?           @db.Uuid
+  description       String
+  quantity          Decimal           @db.Decimal(10, 2)
+  unit_price        Decimal           @db.Decimal(15, 2)
+  tax_amount        Decimal           @default(0) @db.Decimal(15, 2)
+  total             Decimal           @db.Decimal(15, 2)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  supplier_invoices supplier_invoices @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  items             items?            @relation(fields: [item_id], references: [id])
+
+  @@unique([invoice_id, line_number])
+  @@index([invoice_id])
+}
+
+model three_way_matches {
+  id                String            @id @default(uuid()) @db.Uuid
+  company_id        String            @db.Uuid
+  po_id             String            @db.Uuid
+  grn_id            String            @db.Uuid
+  invoice_id        String            @unique @db.Uuid
+  match_status      match_status      @default(pending)
+  po_total          Decimal           @db.Decimal(15, 2)
+  grn_total         Decimal           @db.Decimal(15, 2)
+  invoice_total     Decimal           @db.Decimal(15, 2)
+  quantity_match    Boolean           @default(false)
+  price_match       Boolean           @default(false)
+  total_match       Boolean           @default(false)
+  tolerance_pct     Decimal           @default(5) @db.Decimal(5, 2)
+  discrepancy_notes String?
+  matched_by        String?           @db.Uuid
+  matched_at        DateTime?
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  companies         companies         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  purchase_orders   purchase_orders   @relation(fields: [po_id], references: [id])
+  goods_receipts    goods_receipts    @relation(fields: [grn_id], references: [id])
+  supplier_invoices supplier_invoices @relation(fields: [invoice_id], references: [id])
+  users             users?            @relation(fields: [matched_by], references: [id])
+
+  @@index([company_id])
+  @@index([po_id])
+  @@index([grn_id])
+  @@index([match_status])
+}
+
+model invoice_payments {
+  id                String            @id @default(uuid()) @db.Uuid
+  company_id        String            @db.Uuid
+  invoice_id        String            @db.Uuid
+  payment_date      DateTime          @db.Date
+  amount            Decimal           @db.Decimal(15, 2)
+  payment_method    String            @db.VarChar(50)
+  reference_number  String?           @db.VarChar(100)
+  notes             String?
+  created_by        String            @db.Uuid
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  companies         companies         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  supplier_invoices supplier_invoices @relation(fields: [invoice_id], references: [id])
+  users             users             @relation(fields: [created_by], references: [id])
+
+  @@index([company_id])
+  @@index([invoice_id])
 }
 
 // INVENTORY MANAGEMENT MODELS
@@ -1281,21 +1457,21 @@ model warehouses {
 }
 
 model stock_levels {
-  id               String      @id @default(uuid()) @db.Uuid
-  company_id       String      @db.Uuid
-  warehouse_id     String      @db.Uuid
-  item_id          String      @db.Uuid
-  quantity         Decimal     @default(0) @db.Decimal(10, 2)
-  reserved_qty     Decimal     @default(0) @db.Decimal(10, 2)
-  available_qty    Decimal     @default(0) @db.Decimal(10, 2)
-  reorder_point    Decimal?    @db.Decimal(10, 2)
-  reorder_quantity Decimal?    @db.Decimal(10, 2)
+  id               String     @id @default(uuid()) @db.Uuid
+  company_id       String     @db.Uuid
+  warehouse_id     String     @db.Uuid
+  item_id          String     @db.Uuid
+  quantity         Decimal    @default(0) @db.Decimal(10, 2)
+  reserved_qty     Decimal    @default(0) @db.Decimal(10, 2)
+  available_qty    Decimal    @default(0) @db.Decimal(10, 2)
+  reorder_point    Decimal?   @db.Decimal(10, 2)
+  reorder_quantity Decimal?   @db.Decimal(10, 2)
   last_counted_at  DateTime?
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
-  companies        companies   @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  warehouses       warehouses  @relation(fields: [warehouse_id], references: [id])
-  items            items       @relation(fields: [item_id], references: [id])
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+  companies        companies  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  warehouses       warehouses @relation(fields: [warehouse_id], references: [id])
+  items            items      @relation(fields: [item_id], references: [id])
 
   @@unique([warehouse_id, item_id])
   @@index([company_id])
@@ -1303,23 +1479,23 @@ model stock_levels {
 }
 
 model stock_movements {
-  id                String             @id @default(uuid()) @db.Uuid
-  company_id        String             @db.Uuid
-  movement_type     stock_movement_type
-  reference_type    String?            @db.VarChar(50)
-  reference_id      String?            @db.Uuid
-  warehouse_id      String             @db.Uuid
-  item_id           String             @db.Uuid
-  quantity          Decimal            @db.Decimal(10, 2)
-  unit_cost         Decimal?           @db.Decimal(15, 2)
-  movement_date     DateTime           @default(now())
-  notes             String?
-  created_by        String             @db.Uuid
-  created_at        DateTime           @default(now())
-  companies         companies          @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  warehouses        warehouses         @relation(fields: [warehouse_id], references: [id])
-  items             items              @relation(fields: [item_id], references: [id])
-  users             users              @relation(fields: [created_by], references: [id])
+  id             String              @id @default(uuid()) @db.Uuid
+  company_id     String              @db.Uuid
+  movement_type  stock_movement_type
+  reference_type String?             @db.VarChar(50)
+  reference_id   String?             @db.Uuid
+  warehouse_id   String              @db.Uuid
+  item_id        String              @db.Uuid
+  quantity       Decimal             @db.Decimal(10, 2)
+  unit_cost      Decimal?            @db.Decimal(15, 2)
+  movement_date  DateTime            @default(now())
+  notes          String?
+  created_by     String              @db.Uuid
+  created_at     DateTime            @default(now())
+  companies      companies           @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  warehouses     warehouses          @relation(fields: [warehouse_id], references: [id])
+  items          items               @relation(fields: [item_id], references: [id])
+  users          users               @relation(fields: [created_by], references: [id])
 
   @@index([company_id])
   @@index([warehouse_id])
@@ -1349,4 +1525,12 @@ enum stock_movement_type {
   OUT
   TRANSFER
   ADJUSTMENT
+}
+
+enum match_status {
+  pending
+  matched
+  discrepancy
+  approved
+  rejected
 }

@@ -646,7 +646,7 @@ const MyKPIPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24, background: '#000000', minHeight: '100vh' }}>
+    <div className="page-transition-wrapper" style={{ padding: 24, background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card>

@@ -17,7 +17,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Vendors')
 @ApiBearerAuth()
-@Controller('api/v1/vendors')
+@Controller('vendors')
 @UseGuards(JwtAuthGuard)
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}

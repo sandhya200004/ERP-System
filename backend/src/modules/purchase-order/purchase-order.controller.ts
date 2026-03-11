@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Purchase Orders')
 @ApiBearerAuth()
-@Controller('api/v1/purchase-orders')
+@Controller('purchase-orders')
 @UseGuards(JwtAuthGuard)
 export class PurchaseOrderController {
   constructor(private readonly poService: PurchaseOrderService) {}

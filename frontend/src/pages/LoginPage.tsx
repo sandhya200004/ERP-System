@@ -225,7 +225,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="page-transition-wrapper" style={{ ...styles.container, animation: 'fadeIn 0.5s ease-in' }}>
       {/* LEFT PANEL */}
       <div style={styles.leftPanel}>
         <div style={styles.noiseOverlay} />
@@ -379,6 +379,30 @@ const LoginPage: React.FC = () => {
           <p style={styles.secureText}>
             Protected by Triverse Secure Stack™
           </p>
+          
+          <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/platform-admin/login')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#9ca3af',
+                fontSize: '13px',
+                cursor: 'pointer',
+                padding: '8px',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.color = '#a855f7';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.color = '#9ca3af';
+              }}
+            >
+              🔐 Platform Admin Access →
+            </button>
+          </div>
         </div>
       </div>
 

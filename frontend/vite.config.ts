@@ -29,4 +29,36 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Optimize for production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true,
+      },
+    },
+    // Code splitting configuration
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'chart-vendor': ['recharts', '@ant-design/charts'],
+          'utility-vendor': ['axios', 'dayjs', 'date-fns', 'zustand'],
+        },
+      },
+    },
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
+    // Source maps for production debugging (disable for smaller builds)
+    sourcemap: false,
+    // Target modern browsers for smaller output
+    target: 'es2015',
+  },
+  // Performance optimizations
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'antd'],
+  },
 });

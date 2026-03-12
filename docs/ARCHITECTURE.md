@@ -1,505 +1,376 @@
-# System Architecture
+# TriVerse ERP - Architecture Overview
 
-## High-Level Architecture
+## System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       CLIENT LAYER                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Browser    │  │  Mobile App  │  │  External    │      │
-│  │  (React UI)  │  │  (Future)    │  │  API Clients │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   API GATEWAY / NGINX                       │
-│                    (Load Balancer)                          │
-└─────────────────────────────────────────────────────────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          ▼                  ▼                  ▼
-┌──────────────────┐ ┌──────────────┐ ┌──────────────────┐
-│   REST API       │ │   Public     │ │  Enterprise API  │
-│   (Authenticated)│ │   Endpoints  │ │  (API Key Auth)  │
-└──────────────────┘ └──────────────┘ └──────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│              APPLICATION LAYER (NestJS)                     │
-├─────────────────────────────────────────────────────────────┤
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│  │   Auth     │  │Organization│  │ Accounting │           │
-│  │   Module   │  │   Module   │  │   Module   │           │
-│  └────────────┘  └────────────┘  └────────────┘           │
-│                                                             │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│  │   Sales    │  │Master Data │  │ Reporting  │           │
-│  │   Module   │  │   Module   │  │   Module   │           │
-│  └────────────┘  └────────────┘  └────────────┘           │
-│                                                             │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│  │   Public   │  │    API     │  │   Shared   │           │
-│  │   Module   │  │   Module   │  │  Services  │           │
-│  └────────────┘  └────────────┘  └────────────┘           │
-└─────────────────────────────────────────────────────────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          ▼                  ▼                  ▼
-┌──────────────────┐ ┌──────────────┐ ┌──────────────────┐
-│   Prisma ORM     │ │  Email       │ │  PDF             │
-│                  │ │  Service     │ │  Generator       │
-└──────────────────┘ └──────────────┘ └──────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   DATA LAYER                                │
-├─────────────────────────────────────────────────────────────┤
-│                  PostgreSQL Database                        │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐  │
-│  │ Users  │ │Companies│ │Customers│ │Invoices│ │Journal │  │
-│  │Roles   │ │Branches │ │ Items  │ │Payments│ │Entries │  │
-│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Module Dependencies
-
-```
-┌─────────────┐
-│   Shared    │◄──────────┐
-│   Modules   │           │
-└─────────────┘           │
-      ▲                   │
-      │                   │
-┌─────┴─────────────┐     │
-│                   │     │
-│  ┌──────────┐    │     │
-│  │  Prisma  │    │     │
-│  │ Service  │    │     │
-│  └──────────┘    │     │
-│                  │     │
-│  ┌──────────┐   │     │
-│  │  Audit   │   │     │
-│  │ Service  │   │     │
-│  └──────────┘   │     │
-│                 │     │
-└─────────────────┘     │
-                        │
-┌───────────────────────┼───────────────────────┐
-│                       │                       │
-▼                       ▼                       ▼
-┌─────────────┐   ┌─────────────┐      ┌─────────────┐
-│    Auth     │   │Organization │      │Master Data  │
-│   Module    │   │   Module    │      │   Module    │
-└─────────────┘   └─────────────┘      └─────────────┘
-      │                  │                     │
-      │                  │                     │
-      └──────────┬───────┴──────────┬──────────┘
-                 │                  │
-                 ▼                  ▼
-         ┌─────────────┐    ┌─────────────┐
-         │    Sales    │    │ Accounting  │
-         │   Module    │───▶│   Module    │
-         └─────────────┘    └─────────────┘
-                 │                  │
-                 └─────────┬────────┘
-                           │
-                           ▼
-                   ┌─────────────┐
-                   │ Reporting   │
-                   │   Module    │
-                   └─────────────┘
-```
-
----
-
-## Data Flow: Invoice Creation to Payment
-
-```
-1. CREATE INVOICE
-   │
-   ├─► User: Create Invoice (Draft)
-   │   └─► Sales Module → Invoice Service
-   │       └─► Prisma → invoices table
-   │
-2. FINALIZE INVOICE
-   │
-   ├─► User: Finalize Invoice
-   │   └─► Sales Module → Invoice Service
-   │       ├─► Change status to 'final'
-   │       ├─► Lock invoice (immutable)
-   │       └─► Accounting Module → Posting Service
-   │           └─► Create Journal Entry:
-   │               ├─► Debit: Accounts Receivable
-   │               ├─► Credit: Revenue
-   │               └─► Credit: Tax Payable
-   │
-3. SEND INVOICE
-   │
-   ├─► User: Send Invoice
-   │   └─► Sales Module → Invoice Service
-   │       ├─► PDF Service → Generate PDF
-   │       ├─► Email Service → Send Email
-   │       └─► Update status to 'sent'
-   │
-4. RECEIVE PAYMENT
-   │
-   ├─► User: Create Payment
-   │   └─► Sales Module → Payment Service
-   │       └─► Prisma → payments table
-   │
-5. APPLY PAYMENT
-   │
-   └─► User: Apply Payment to Invoice
-       └─► Sales Module → Payment Service
-           ├─► Create payment_applications
-           ├─► Update invoice amount_paid
-           ├─► Update invoice status (partially_paid/paid)
-           └─► Accounting Module → Posting Service
-               └─► Create Journal Entry:
-                   ├─► Debit: Cash/Bank
-                   ├─► Credit: Accounts Receivable
-                   └─► FX Gain/Loss (if applicable)
-```
-
----
-
-## Security Architecture
+### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     SECURITY LAYERS                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 1: NETWORK SECURITY                                 │
-│  ┌──────────────────────────────────────────────┐          │
-│  │ • HTTPS/TLS                                  │          │
-│  │ • CORS Configuration                         │          │
-│  │ • Rate Limiting                              │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-│  Layer 2: AUTHENTICATION                                   │
-│  ┌──────────────────────────────────────────────┐          │
-│  │ • JWT Tokens (Access + Refresh)              │          │
-│  │ • Password Hashing (bcrypt)                  │          │
-│  │ • Token Rotation                             │          │
-│  │ • API Key Authentication (Enterprise)        │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-│  Layer 3: AUTHORIZATION                                    │
-│  ┌──────────────────────────────────────────────┐          │
-│  │ • Role-Based Access Control (RBAC)           │          │
-│  │ • Permission Guards                          │          │
-│  │ • Company Scoping                            │          │
-│  │ • Branch Scoping                             │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-│  Layer 4: DATA SECURITY                                    │
-│  ┌──────────────────────────────────────────────┐          │
-│  │ • Input Validation (class-validator)         │          │
-│  │ • SQL Injection Prevention (Prisma ORM)      │          │
-│  │ • XSS Protection                             │          │
-│  │ • Data Isolation (company_id filtering)      │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-│  Layer 5: AUDIT & MONITORING                               │
-│  ┌──────────────────────────────────────────────┐          │
-│  │ • Audit Logs (all mutations)                 │          │
-│  │ • Error Logging                              │          │
-│  │ • Access Logs                                │          │
-│  │ • Performance Monitoring                     │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
+│                         Client Layer                         │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  React Frontend (Vite + TypeScript + Ant Design)      │ │
+│  │  - SPA with React Router                              │ │
+│  │  - Zustand State Management                           │ │
+│  │  - Ant Design UI Components                           │ │
+│  └────────────────────────────────────────────────────────┘ │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTPS/REST API
+┌───────────────────────────▼─────────────────────────────────┐
+│                      Application Layer                       │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  NestJS Backend (Node.js + TypeScript)                │ │
+│  │  - REST API Endpoints                                 │ │
+│  │  - JWT Authentication                                 │ │
+│  │  - Role-Based Access Control                          │ │
+│  │  - Business Logic Services                            │ │
+│  └────────────────────────────────────────────────────────┘ │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ Prisma ORM
+┌───────────────────────────▼─────────────────────────────────┐
+│                       Data Layer                             │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  PostgreSQL Database                                   │ │
+│  │  - Relational Data Storage                            │ │
+│  │  - ACID Transactions                                  │ │
+│  │  - Full-Text Search                                   │ │
+│  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Database Schema Relationships
-
-```
-users ────┬──── user_roles ──── roles ──── role_permissions ──── permissions
-          │
-          ├──── refresh_tokens
-          │
-          └──── created_by (invoices, quotes, etc.)
-
-
-companies ────┬──── branches
-              │
-              ├──── customers
-              │
-              ├──── items
-              │
-              ├──── taxes
-              │
-              ├──── quotes ──── quote_lines ──── quote_line_taxes
-              │
-              ├──── invoices ──── invoice_lines ──── invoice_line_taxes
-              │                      │
-              │                      └──── payment_applications ──── payments
-              │
-              ├──── accounts
-              │
-              ├──── journal_entries ──── journal_lines
-              │
-              └──── api_keys
-
-
-currencies ────┬──── fx_rates
-               │
-               ├──── customers (default_currency)
-               │
-               └──── invoices, quotes, payments (currency_code)
-```
-
----
-
-## Accounting Engine Flow
-
-```
-SALES TRANSACTION
-│
-├─► Invoice Finalized
-│   │
-│   ├─► Create Journal Entry (Draft)
-│   │   │
-│   │   ├─► Add Line: Debit Accounts Receivable ($1,100)
-│   │   ├─► Add Line: Credit Revenue ($1,000)
-│   │   └─► Add Line: Credit Tax Payable ($100)
-│   │
-│   └─► Post Journal Entry
-│       └─► Status: posted
-│
-└─► Payment Applied
-    │
-    ├─► Create Journal Entry (Draft)
-    │   │
-    │   ├─► Add Line: Debit Cash/Bank ($1,100)
-    │   └─► Add Line: Credit Accounts Receivable ($1,100)
-    │
-    └─► Post Journal Entry
-        └─► Status: posted
-
-
-LEDGER EFFECT
-
-Accounts Receivable:
-  Debit:  $1,100  (Invoice)
-  Credit: $1,100  (Payment)
-  Balance: $0
-
-Revenue:
-  Credit: $1,000  (Invoice)
-  Balance: $1,000 (Credit)
-
-Tax Payable:
-  Credit: $100    (Invoice)
-  Balance: $100   (Credit)
-
-Cash/Bank:
-  Debit:  $1,100  (Payment)
-  Balance: $1,100 (Debit)
-```
-
----
-
-## Multi-Tenancy Model
-
-```
-COMPANY A                    COMPANY B
-├─ Branch 1                  ├─ Branch 1
-│  ├─ User 1 (Manager)       │  └─ User 4 (Staff)
-│  └─ User 2 (Staff)         │
-├─ Branch 2                  └─ Branch 2
-│  └─ User 3 (Staff)            └─ User 5 (Admin)
-│
-├─ Customers                 ├─ Customers
-│  ├─ Customer A-1           │  └─ Customer B-1
-│  └─ Customer A-2           │
-│                            │
-├─ Invoices                  └─ Invoices
-│  └─ INV-A-001                 └─ INV-B-001
-│
-└─ Chart of Accounts         └─ Chart of Accounts
-
-
-DATA ISOLATION RULES:
-• All queries filtered by company_id
-• Users can only access their company's data
-• Journal entries scoped to company
-• Numbering sequences per company/branch
-• No cross-company data leaks
-```
-
----
-
-## API Request Lifecycle
-
-```
-1. CLIENT REQUEST
-   │
-   └─► HTTPS POST /api/v1/invoices
-       Headers: Authorization: Bearer <token>
-       Body: { invoice data }
-
-2. NGINX / API GATEWAY
-   │
-   ├─► SSL/TLS Termination
-   ├─► Rate Limiting Check
-   └─► Forward to NestJS App
-
-3. NESTJS MIDDLEWARE
-   │
-   ├─► CORS Check
-   ├─► Body Parser
-   └─► Logging
-
-4. AUTHENTICATION GUARD
-   │
-   ├─► Extract JWT Token
-   ├─► Verify Token Signature
-   ├─► Extract User & Company Info
-   └─► Attach to Request Object
-
-5. AUTHORIZATION GUARD
-   │
-   ├─► Check User Permissions
-   ├─► Verify Company Access
-   └─► Allow/Deny Request
-
-6. CONTROLLER
-   │
-   ├─► Validate DTO (class-validator)
-   ├─► Extract Request Data
-   └─► Call Service Method
-
-7. SERVICE LAYER
-   │
-   ├─► Business Logic
-   ├─► Company Scoping
-   ├─► Prisma Queries
-   └─► Return Result
-
-8. DATABASE
-   │
-   ├─► Execute Query
-   ├─► Return Data
-   └─► Transaction (if needed)
-
-9. AUDIT INTERCEPTOR
-   │
-   └─► Log Action to audit_logs
-
-10. RESPONSE
-    │
-    ├─► Transform Data
-    ├─► Serialize Response
-    └─► Return JSON
-
-11. CLIENT
-    │
-    └─► Receive Response
-```
-
----
-
-## Deployment Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      PRODUCTION                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────────────────────────────────────┐          │
-│  │           Load Balancer / CDN                │          │
-│  └──────────────────────────────────────────────┘          │
-│                         │                                   │
-│         ┌───────────────┼───────────────┐                  │
-│         ▼               ▼               ▼                  │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐            │
-│  │ NestJS   │    │ NestJS   │    │ NestJS   │            │
-│  │ Instance │    │ Instance │    │ Instance │            │
-│  │    #1    │    │    #2    │    │    #3    │            │
-│  └──────────┘    └──────────┘    └──────────┘            │
-│         │               │               │                  │
-│         └───────────────┼───────────────┘                  │
-│                         │                                   │
-│                         ▼                                   │
-│              ┌──────────────────┐                          │
-│              │   PostgreSQL     │                          │
-│              │   (Primary)      │                          │
-│              └──────────────────┘                          │
-│                         │                                   │
-│                         ├─► Replica 1 (Read)               │
-│                         └─► Replica 2 (Read)               │
-│                                                             │
-│  ┌──────────────────────────────────────────────┐          │
-│  │               React Frontend                 │          │
-│  │          (Static Files on CDN)               │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-│  ┌──────────────────────────────────────────────┐          │
-│  │          Redis (Session/Cache)               │          │
-│  └──────────────────────────────────────────────┘          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Technology Stack Summary
-
-### Backend
-- **Runtime**: Node.js 18+
-- **Framework**: NestJS 10
-- **Database**: PostgreSQL 14+
-- **ORM**: Prisma 5
-- **Authentication**: JWT (passport-jwt)
-- **Validation**: class-validator
-- **API Docs**: Swagger/OpenAPI
-- **Email**: NodeMailer
-- **PDF**: Puppeteer
+## Technology Stack
 
 ### Frontend
 - **Framework**: React 18
 - **Build Tool**: Vite 5
+- **Language**: TypeScript
 - **UI Library**: Ant Design 5
-- **State**: Zustand
-- **Data Fetching**: React Query
+- **State Management**: Zustand
+- **Routing**: React Router v6
 - **HTTP Client**: Axios
-- **Charts**: Recharts
-- **Language**: TypeScript 5
+- **Form Handling**: Ant Design Forms
+
+### Backend
+- **Framework**: NestJS 10
+- **Runtime**: Node.js 20
+- **Language**: TypeScript
+- **Database ORM**: Prisma 5
+- **Authentication**: JWT + Passport
+- **Validation**: class-validator
+- **Documentation**: Swagger/OpenAPI
+- **PDF Generation**: Puppeteer
+- **Email**: Nodemailer
+
+### Database
+- **RDBMS**: PostgreSQL 15
+- **Features Used**:
+  - JSONB columns for flexible data
+  - Full-text search
+  - Indexes for performance
+  - Foreign keys for referential integrity
+  - Soft deletes
 
 ### DevOps
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose / K8s
+- **Containerization**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions
-- **Monitoring**: (TBD)
-- **Logging**: (TBD)
+- **Web Server**: Nginx (for frontend)
+- **Process Manager**: PM2 (alternative to Docker)
 
----
+## Module Structure
 
-## Scalability Considerations
+### Backend Modules
+
+```
+src/
+├── modules/
+│   ├── auth/              # Authentication & authorization
+│   ├── customer/          # Customer management
+│   ├── item/              # Products/services
+│   ├── invoice/           # Invoice generation & management
+│   ├── quote/             # Quote/estimate handling
+│   ├── payment/           # Payment recording
+│   ├── report/            # Business reports
+│   ├── attendance/        # Employee attendance
+│   ├── employee-task/     # Task management
+│   ├── role/              # Role & permission management
+│   ├── currency/          # Multi-currency support
+│   ├── tax/               # Tax calculation
+│   └── company/           # Company settings
+├── shared/
+│   ├── prisma/            # Database service
+│   ├── guards/            # Auth guards
+│   ├── decorators/        # Custom decorators
+│   ├── audit/             # Audit logging
+│   ├── logger/            # Logging service
+│   └── health/            # Health check
+└── main.ts                # Application bootstrap
+```
+
+### Frontend Structure
+
+```
+src/
+├── pages/                 # Page components
+│   ├── LoginPage.tsx
+│   ├── DashboardPage.tsx
+│   ├── CustomersPage.tsx
+│   ├── InvoicesPage.tsx
+│   └── ...
+├── layouts/               # Layout components
+│   └── DashboardLayout.tsx
+├── services/              # API services
+│   ├── api.ts
+│   ├── auth.service.ts
+│   ├── customer.service.ts
+│   └── ...
+├── store/                 # State management
+│   └── authStore.ts
+├── components/            # Reusable components
+├── hooks/                 # Custom hooks
+└── utils/                 # Utility functions
+```
+
+## Data Flow
+
+### Authentication Flow
+
+```
+1. User enters credentials
+   └→ Frontend: LoginPage.tsx
+      └→ API POST /auth/login
+         └→ Backend: AuthController
+            └→ AuthService.validateUser()
+               └→ Database: Query users table
+                  └→ Return user + JWT tokens
+                     └→ Store tokens in localStorage
+                        └→ Redirect to Dashboard
+```
+
+### Invoice Creation Flow
+
+```
+1. User creates invoice
+   └→ Frontend: InvoicesPage.tsx
+      └→ API POST /invoices
+         └→ Backend: InvoiceController
+            └→ JwtAuthGuard (verify token)
+               └→ PermissionsGuard (check permissions)
+                  └→ InvoiceService.create()
+                     ├→ Generate invoice number
+                     ├→ Calculate totals
+                     ├→ Database: Insert invoice + line items
+                     ├→ AuditService.log()
+                     └→ Return created invoice
+                        └→ Frontend: Update UI
+```
+
+## Security Architecture
+
+### Authentication
+- JWT-based stateless authentication
+- Access tokens (15min) + Refresh tokens (7days)
+- Secure password hashing (bcrypt, 10 rounds)
+- Token rotation on refresh
+
+### Authorization
+- Role-Based Access Control (RBAC)
+- Permission-based guards
+- Resource-level authorization
+- Company data isolation
+
+### Data Protection
+- SQL injection prevention (Prisma ORM)
+- XSS protection (input validation)
+- CSRF protection
+- Rate limiting (100 req/min)
+- CORS configuration
+- HTTPS enforcement
+
+### Audit Trail
+- All mutations logged
+- User action tracking
+- IP address recording
+- Timestamp tracking
+
+## Database Schema
+
+### Core Tables
+
+**users**: User accounts
+- Authentication credentials
+- Profile information
+- Relationships to companies via user_roles
+
+**companies**: Organization data
+- Company details
+- Settings
+- Default configurations
+
+**roles**: Access roles
+- Role definitions
+- Company-specific
+
+**permissions**: Granular permissions
+- Resource-action pairs
+- Assigned to roles via role_permissions
+
+**customers**: Client information
+- Contact details
+- Billing information
+- Payment terms
+
+**items**: Products/Services
+- Pricing information
+- Inventory tracking
+- Tax settings
+
+**invoices**: Sales invoices
+- Header information
+- Status tracking
+- Related to customers
+
+**invoice_lines**: Invoice line items
+- Item details
+- Quantities and prices
+- Tax calculations
+
+**payments**: Payment records
+- Amount and method
+- Reference numbers
+- Invoice allocation
+
+**quotes**: Sales quotes
+- Similar to invoices
+- Expiry dates
+- Conversion tracking
+
+## API Design
+
+### RESTful Principles
+- Resource-based URLs
+- HTTP methods (GET, POST, PATCH, DELETE)
+- Proper status codes
+- JSON payload
+
+### Endpoint Pattern
+```
+GET    /api/v1/customers       # List all
+GET    /api/v1/customers/:id   # Get one
+POST   /api/v1/customers       # Create
+PATCH  /api/v1/customers/:id   # Update
+DELETE /api/v1/customers/:id   # Delete
+```
+
+### Response Format
+```json
+{
+  "data": [...],
+  "total": 100,
+  "page": 1,
+  "limit": 10
+}
+```
+
+### Error Format
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "details": [...]
+}
+```
+
+## Performance Considerations
+
+### Frontend Optimization
+- Code splitting
+- Lazy loading
+- Memoization (useMemo, useCallback)
+- Virtual scrolling for large lists
+- Debounced search inputs
+
+### Backend Optimization
+- Database query optimization
+- Proper indexing
+- Pagination on all lists
+- Connection pooling
+- Caching strategies
+
+### Database Optimization
+- Indexes on frequently queried columns
+- Composite indexes for multi-column queries
+- Partial indexes for filtered queries
+- Query plan analysis
+
+## Scalability
 
 ### Horizontal Scaling
-- Stateless NestJS instances
-- Load balancer distribution
-- Database read replicas
-- Redis for session storage
+- Stateless API (no session storage)
+- Load balancer compatible
+- Database connection pooling
+- Read replicas for reporting
 
 ### Vertical Scaling
-- Database indexing
-- Query optimization
-- Caching strategy
-- Connection pooling
+- Resource limits configurable
+- Memory management
+- CPU optimization
 
-### Performance Targets
-- API response time: < 100ms (p95)
-- Page load time: < 2s
-- Support: 10k+ invoices/month
-- Concurrent users: 100+
+## Monitoring & Logging
+
+### Application Logs
+- Structured logging
+- Log levels (error, warn, info, debug)
+- Request/response logging
+- Performance metrics
+
+### Health Checks
+- Database connectivity
+- Memory usage
+- Uptime tracking
+- API endpoint testing
+
+### Alerting
+- Error rate monitoring
+- Performance degradation
+- Database connection issues
+- Disk space warnings
+
+## Backup & Recovery
+
+### Database Backups
+- Daily automated backups
+- Point-in-time recovery
+- Off-site backup storage
+- Retention policy (30 days)
+
+### Application Backups
+- Docker image versioning
+- Configuration backups
+- Code repository (git)
+
+### Disaster Recovery
+- RTO: 4 hours
+- RPO: 24 hours
+- Documented recovery procedures
+- Regular recovery testing
+
+## Future Enhancements
+
+### Planned Features
+- Real-time notifications (WebSocket)
+- Advanced analytics dashboard
+- Mobile apps (React Native)
+- API rate limiting per user
+- Multi-tenancy improvements
+- Scheduled reports
+- Advanced workflow automation
+- Integration marketplace
+
+### Technical Debt
+- Increase test coverage to 80%
+- Implement caching layer (Redis)
+- Add full-text search (Elasticsearch)
+- Implement CDC for data sync
+- Add API versioning strategy
+- Improve error handling
+- Add request tracing

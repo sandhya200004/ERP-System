@@ -70,11 +70,11 @@ TriVerse ERP is a **production-ready, enterprise-grade ERP/CRM system** with com
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 TriVerse-ERP/
-├── backend/                 # NestJS backend
+├── backend/                 # NestJS backend (optimized for 2GB servers)
 │   ├── src/
 │   │   ├── auth/           # Authentication & authorization
 │   │   ├── organization/   # Companies & branches
@@ -84,36 +84,64 @@ TriVerse-ERP/
 │   │   ├── reporting/      # Reports & analytics
 │   │   ├── api/            # Enterprise API layer
 │   │   ├── public/         # Public forms
-│   │   └── shared/         # Common utilities
+│   │   └── shared/         # Common utilities (compression, caching)
 │   └── prisma/             # Database schema & migrations
-├── frontend/                # React frontend
+├── frontend/                # React frontend (code-split, lazy-loaded)
 │   ├── src/
-│   │   ├── features/       # Feature modules
+│   │   ├── features/       # Feature modules (lazy loaded)
 │   │   ├── components/     # Shared components
 │   │   ├── layouts/        # Layout templates
 │   │   ├── services/       # API clients
 │   │   └── utils/          # Utilities
-├── docs/                    # Documentation
-└── scripts/                 # Deployment & utility scripts
+├── docs/                    # 📚 Documentation Hub (80+ docs)
+│   ├── deployment/         # 🚀 Deployment guides
+│   ├── security/           # 🔒 Security documentation
+│   ├── features/           # ⚙️  Feature guides
+│   ├── admin/              # 👤 Admin documentation
+│   ├── api/                # 📡 API reference
+│   ├── performance/        # ⚡ Performance optimization
+│   ├── implementation/     # 📋 Progress reports
+│   └── guides/             # 📚 General guides
+└── scripts/                 # 🛠️  Automation Scripts (15+ scripts)
+    ├── deployment/         # Deploy & build scripts
+    ├── testing/            # Testing scripts
+    └── admin/              # Admin utilities
+
+📄 See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for complete organization
 ```
 
 ---
 
 ## 📚 Complete Documentation
 
-This project includes **comprehensive, production-ready documentation**:
+This project includes **comprehensive, production-ready documentation** (80+ documents organized):
 
+### 🎯 Quick Start
 | Document | Purpose | Status |
 |----------|---------|--------|
-| **[PRD.md](docs/PRD.md)** | Complete Product Requirements Document | ✅ |
-| **[DATABASE_SCHEMA.sql](docs/DATABASE_SCHEMA.sql)** | Production PostgreSQL schema (30+ tables) | ✅ |
-| **[API_CONTRACTS.md](docs/API_CONTRACTS.md)** | Full REST API specification with examples | ✅ |
-| **[COPILOT_SCAFFOLDING.md](docs/COPILOT_SCAFFOLDING.md)** | Module-by-module Copilot prompts | ✅ |
-| **[QUICK_START.md](docs/QUICK_START.md)** | Step-by-step setup guide | ✅ |
-| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System architecture & design decisions | ✅ |
-| **[PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** | Complete file tree & organization | ✅ |
-| **[DEVELOPMENT_CHECKLIST.md](docs/DEVELOPMENT_CHECKLIST.md)** | 250+ item progress tracker | ✅ |
-| **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** | What's created & next steps | ✅ |
+| **[START_HERE.md](docs/START_HERE.md)** | Getting started guide | ✅ |
+| **[QUICK_START.md](docs/QUICK_START.md)** | 5-minute setup guide | ✅ |
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System architecture & design | ✅ |
+| **[PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** | Complete file organization | ✅ |
+
+### 📂 Documentation Categories
+| Category | Description | Count |
+|----------|-------------|-------|
+| **[📡 API](docs/api/)** | REST API documentation & contracts | 1 doc |
+| **[⚡ Performance](docs/performance/)** | Optimization guides for 2GB servers | 3 docs |
+| **[🚀 Deployment](docs/deployment/)** | Deployment guides & cloud configs | 12 docs |
+| **[🔒 Security](docs/security/)** | Security policies & incident response | 12 docs |
+| **[⚙️ Features](docs/features/)** | KPI, multi-tenant, invoice guides | 15 docs |
+| **[👤 Admin](docs/admin/)** | Admin panel & permissions | 8 docs |
+| **[📋 Implementation](docs/implementation/)** | Progress reports & status updates | 15 docs |
+| **[📚 Guides](docs/guides/)** | Setup, commands, references | 6 docs |
+
+### 🔥 Performance Highlights
+- **[PERFORMANCE_OPTIMIZATION_GUIDE.md](docs/performance/PERFORMANCE_OPTIMIZATION_GUIDE.md)** - Complete guide for 2GB/50+ users (400+ lines)
+- **[OPTIMIZATION_README.md](docs/performance/OPTIMIZATION_README.md)** - Quick start summary
+- **[QUICK_OPTIMIZATION_REFERENCE.md](docs/performance/QUICK_OPTIMIZATION_REFERENCE.md)** - Developer quick reference
+
+**System Capacity:** Optimized for 50-75 concurrent users on 2GB RAM servers 🚀
 
 ---
 

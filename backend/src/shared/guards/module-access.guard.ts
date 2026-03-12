@@ -76,7 +76,7 @@ export class ModuleAccessGuard implements CanActivate {
   }
 
   private getModuleLimitsByPlan(plan: string): Record<string, boolean> {
-    const limits = {
+    const limits: Record<string, Record<string, boolean>> = {
       trial: {
         sales: true,
         finance: true,

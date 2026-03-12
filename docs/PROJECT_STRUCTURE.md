@@ -1,287 +1,227 @@
-# TriVerse ERP - Complete Project Structure
+# 📁 TriVerse ERP - Project Structure
+
+## 📂 Root Directory
 
 ```
-N:\PROJECTS\TriVerse ERP\
+TriVerse ERP/
+├── 📄 README.md                    # Main project documentation
+├── 📄 .env.example                 # Environment variables template
+├── 📄 .env.production             # Production configuration
+├── 📄 docker-compose.yml          # Docker development setup
+├── 📄 docker-compose.prod.yml     # Docker production setup
+├── 📄 ecosystem.config.js         # PM2 process manager config
+├── 📄 .gitignore                  # Git ignore rules
 │
-├── README.md                          # Main project overview
-├── IMPLEMENTATION_SUMMARY.md          # What's been created & next steps
-├── .gitignore                         # Git ignore rules
+├── 📁 backend/                    # NestJS Backend Application
+│   ├── src/                       # Source code
+│   ├── prisma/                    # Database schema & migrations
+│   ├── package.json               # Backend dependencies
+│   └── ...
 │
-├── docs/                              # 📚 Complete Documentation
-│   ├── PRD.md                        # Product Requirements Document
-│   ├── DATABASE_SCHEMA.sql           # PostgreSQL schema (production-ready)
-│   ├── API_CONTRACTS.md              # REST API specification
-│   ├── COPILOT_SCAFFOLDING.md        # Module-by-module Copilot prompts
-│   ├── QUICK_START.md                # Step-by-step setup guide
-│   └── ARCHITECTURE.md               # System architecture & diagrams
+├── 📁 frontend/                   # React Frontend Application
+│   ├── src/                       # Source code
+│   ├── public/                    # Static assets
+│   ├── package.json               # Frontend dependencies
+│   └── ...
 │
-├── backend/                           # 🔧 NestJS Backend API
-│   ├── src/
-│   │   ├── auth/                     # Authentication module
-│   │   │   ├── strategies/          # JWT & Local strategies
-│   │   │   ├── guards/              # Auth guards
-│   │   │   ├── dto/                 # Data transfer objects
-│   │   │   ├── auth.controller.ts
-│   │   │   ├── auth.service.ts
-│   │   │   └── auth.module.ts
-│   │   │
-│   │   ├── organization/             # Companies & Branches
-│   │   │   ├── companies/
-│   │   │   ├── branches/
-│   │   │   ├── dto/
-│   │   │   └── organization.module.ts
-│   │   │
-│   │   ├── accounting/               # Double-entry accounting
-│   │   │   ├── accounts/            # Chart of accounts
-│   │   │   ├── journal/             # Journal entries
-│   │   │   ├── posting/             # Posting service
-│   │   │   └── accounting.module.ts
-│   │   │
-│   │   ├── sales/                    # Sales documents
-│   │   │   ├── quotes/              # Quote management
-│   │   │   ├── invoices/            # Invoice management
-│   │   │   ├── payments/            # Payment management
-│   │   │   └── sales.module.ts
-│   │   │
-│   │   ├── master-data/              # Master data entities
-│   │   │   ├── customers/
-│   │   │   ├── items/
-│   │   │   ├── taxes/
-│   │   │   ├── currencies/
-│   │   │   └── master-data.module.ts
-│   │   │
-│   │   ├── reporting/                # Reports & analytics
-│   │   │   ├── sales/
-│   │   │   ├── aging/
-│   │   │   ├── tax/
-│   │   │   └── reporting.module.ts
-│   │   │
-│   │   ├── api/                      # Enterprise API layer
-│   │   │   ├── api-keys/
-│   │   │   ├── enterprise/
-│   │   │   └── api.module.ts
-│   │   │
-│   │   ├── public/                   # Public endpoints (no auth)
-│   │   │   ├── leads/
-│   │   │   └── public.module.ts
-│   │   │
-│   │   ├── shared/                   # Shared utilities
-│   │   │   ├── prisma/              # Database service
-│   │   │   │   ├── prisma.service.ts
-│   │   │   │   └── prisma.module.ts
-│   │   │   ├── audit/               # Audit logging
-│   │   │   │   ├── audit.service.ts
-│   │   │   │   └── audit.module.ts
-│   │   │   ├── email/               # Email service
-│   │   │   ├── pdf/                 # PDF generation
-│   │   │   ├── guards/              # Custom guards
-│   │   │   ├── decorators/          # Custom decorators
-│   │   │   │   ├── user.decorator.ts
-│   │   │   │   └── permissions.decorator.ts
-│   │   │   └── interceptors/        # Custom interceptors
-│   │   │
-│   │   ├── app.module.ts             # Main application module
-│   │   └── main.ts                   # Application entry point
+├── 📁 docs/                       # 📚 Documentation Hub
+│   ├── 📄 START_HERE.md           # Getting started guide
+│   ├── 📄 QUICK_START.md          # Quick start instructions
+│   ├── 📄 ARCHITECTURE.md         # System architecture
+│   ├── 📄 PROJECT_STRUCTURE.md    # This file
 │   │
-│   ├── prisma/                       # Prisma ORM
-│   │   ├── schema.prisma            # Database schema (to be created)
-│   │   ├── migrations/              # Database migrations
-│   │   └── seed.ts                  # Seed data script
-│   │
-│   ├── test/                         # Tests
-│   │   ├── e2e/                     # End-to-end tests
-│   │   └── unit/                    # Unit tests
-│   │
-│   ├── package.json                  # Dependencies & scripts
-│   ├── tsconfig.json                 # TypeScript config
-│   ├── .env.example                  # Environment template
-│   ├── .gitignore                    # Git ignore
-│   └── README.md                     # Backend documentation
+│   ├── 📁 deployment/             # 🚀 Deployment Guides
+│   ├── 📁 security/               # 🔒 Security Documentation
+│   ├── 📁 features/               # ⚙️  Feature Guides
+│   ├── 📁 admin/                  # 👤 Admin Documentation
+│   ├── 📁 api/                    # 📡 API Documentation
+│   ├── 📁 performance/            # ⚡ Performance Guides
+│   ├── 📁 implementation/         # 📋 Progress Reports
+│   └── 📁 guides/                 # 📚 General Guides
 │
-└── frontend/                          # ⚛️ React Frontend
-    ├── src/
-    │   ├── components/               # Shared UI components
-    │   │   ├── common/              # Generic components
-    │   │   ├── layout/              # Layout components
-    │   │   └── forms/               # Reusable forms
-    │   │
-    │   ├── features/                 # Feature modules
-    │   │   ├── auth/                # Authentication
-    │   │   │   ├── components/
-    │   │   │   ├── pages/
-    │   │   │   ├── hooks/
-    │   │   │   └── index.ts
-    │   │   │
-    │   │   ├── dashboard/           # Dashboard
-    │   │   │   ├── components/
-    │   │   │   └── pages/
-    │   │   │
-    │   │   ├── customers/           # Customer management
-    │   │   │   ├── components/
-    │   │   │   ├── hooks/
-    │   │   │   ├── types/
-    │   │   │   └── index.ts
-    │   │   │
-    │   │   ├── items/               # Item management
-    │   │   ├── quotes/              # Quote management
-    │   │   ├── invoices/            # Invoice management
-    │   │   ├── payments/            # Payment management
-    │   │   ├── reports/             # Reports & analytics
-    │   │   └── settings/            # Settings
-    │   │
-    │   ├── layouts/                  # Page layouts
-    │   │   ├── AuthLayout.tsx
-    │   │   ├── DashboardLayout.tsx
-    │   │   └── PublicLayout.tsx
-    │   │
-    │   ├── services/                 # API services
-    │   │   ├── api.ts               # Axios instance
-    │   │   ├── auth.service.ts
-    │   │   ├── customer.service.ts
-    │   │   ├── invoice.service.ts
-    │   │   └── ...
-    │   │
-    │   ├── store/                    # Zustand stores
-    │   │   ├── authStore.ts
-    │   │   ├── companyStore.ts
-    │   │   └── ...
-    │   │
-    │   ├── hooks/                    # Custom React hooks
-    │   │   ├── useAuth.ts
-    │   │   ├── usePermissions.ts
-    │   │   └── ...
-    │   │
-    │   ├── utils/                    # Utility functions
-    │   │   ├── format.ts
-    │   │   ├── validation.ts
-    │   │   └── constants.ts
-    │   │
-    │   ├── types/                    # TypeScript types
-    │   │   ├── api.types.ts
-    │   │   ├── entities.types.ts
-    │   │   └── ...
-    │   │
-    │   ├── App.tsx                   # Root component
-    │   └── main.tsx                  # Entry point
-    │
-    ├── public/                       # Static assets
-    │   └── index.html
-    │
-    ├── package.json                  # Dependencies & scripts
-    ├── tsconfig.json                 # TypeScript config
-    ├── vite.config.ts                # Vite configuration
-    └── README.md                     # Frontend documentation
+└── 📁 scripts/                    # 🛠️  Automation Scripts
+    ├── 📁 deployment/             # Deploy & build scripts
+    ├── 📁 testing/                # Testing scripts
+    └── 📁 admin/                  # Admin utility scripts
 ```
 
 ---
 
-## 📁 File Count Summary
+## 📚 Documentation Organization
 
-### Documentation Files: 7
-- Main README
-- Implementation Summary
-- PRD
-- Database Schema
-- API Contracts
-- Copilot Scaffolding Guide
-- Quick Start Guide
-- Architecture Documentation
+### 🚀 **docs/deployment/**
+Deployment guides and cloud infrastructure setup
+- `DEPLOYMENT_GUIDE.md` - Complete deployment guide
+- `CLOUD_DEPLOYMENT_QUICK_REF.md` - Quick cloud deployment reference
+- `ENTERPRISE_DEPLOYMENT_CHECKLIST.md` - Production deployment checklist
+- `VERCEL_RENDER_DEPLOYMENT.md` - Vercel/Render deployment
+- `render.yaml` & `Procfile` - Cloud platform configs
 
-### Backend Structure: 50+ files (when complete)
-- Module files (controllers, services, DTOs)
-- Shared services (Prisma, Audit, Email, PDF)
-- Guards, decorators, interceptors
-- Configuration files
-- Tests
+### 🔒 **docs/security/**
+Security implementation and policies
+- `SECURITY_IMPLEMENTATION_GUIDE.md` - Security setup guide
+- `SECURITY_QUICK_START_CHECKLIST.md` - Quick security checklist
+- `SECURITY_OPERATIONS_POLICY.md` - Security operations
+- `INCIDENT_RESPONSE_PLAN.md` - Incident response procedures
+- `ANOMALY_DETECTION_RULES.md` - Security monitoring rules
+- `DATA_LIFECYCLE_POLICY.md` - Data management policy
 
-### Frontend Structure: 100+ files (when complete)
-- Feature modules (8 major features)
-- Shared components
-- Services and API clients
-- Stores and hooks
-- Type definitions
-- Layouts and pages
+### ⚙️ **docs/features/**
+Feature-specific documentation
+- `FEATURE_MODULE_CONTROL_GUIDE.md` - Module management
+- `KPI_SYSTEM_COMPLETE_SUMMARY.md` - KPI system guide
+- `INVOICE_BUILDER_GUIDE.md` - Invoice builder
+- `EMAIL_CONFIGURATION_GUIDE.md` - Email setup
+- `MULTI_TENANT_SAAS_ARCHITECTURE.md` - Multi-tenancy guide
+- `SUBDOMAIN_VALIDATION_GUIDE.md` - Subdomain setup
+- `PURCHASE_INVENTORY_IMPLEMENTATION.md` - Procurement module
 
-### Database: 30+ tables
-- User management
-- Organization structure
-- Master data
-- Sales documents
-- Accounting engine
-- Audit and API
+### 👤 **docs/admin/**
+Administrator guides and user management
+- `ADMIN_CONTROL_PANEL_GUIDE.md` - Admin panel guide
+- `PLATFORM_ADMIN_GUIDE.md` - Platform admin features
+- `PERMISSIONS_GUIDE.md` - RBAC and permissions
+- `USER_GUIDE.md` - End-user documentation
+- `EMPLOYEE_CREDENTIALS.md` - Test credentials
 
----
+### 📡 **docs/api/**
+API documentation and contracts
+- `API_DOCUMENTATION.md` - REST API reference
 
-## 🎯 Implementation Status
+### ⚡ **docs/performance/**
+Performance optimization guides
+- `PERFORMANCE_OPTIMIZATION_GUIDE.md` - Complete optimization guide (400+ lines)
+- `OPTIMIZATION_README.md` - Quick start summary
+- `QUICK_OPTIMIZATION_REFERENCE.md` - Quick reference card
 
-### ✅ Created & Ready
-- [x] Complete project structure
-- [x] All documentation
-- [x] Database schema (DDL)
-- [x] API contracts
-- [x] Backend module scaffolding
-- [x] Frontend module scaffolding
-- [x] Shared services (Prisma, Audit)
-- [x] Configuration files
-- [x] Copilot implementation prompts
+### 📋 **docs/implementation/**
+Implementation progress and status reports
+- `FULL_ERP_IMPLEMENTATION.md` - Complete implementation overview
+- `PRODUCTION_READY.md` - Production readiness report
+- `SYSTEM_READY.md` - System status
+- Various progress reports and summaries
 
-### ⏳ To Be Implemented (Use Copilot)
-- [ ] Auth module implementation
-- [ ] Organization module implementation
-- [ ] Master data modules
-- [ ] Sales modules (quotes, invoices, payments)
-- [ ] Accounting engine
-- [ ] Reports
-- [ ] Public forms & API
-- [ ] Frontend UI components
-- [ ] Tests
-- [ ] Deployment setup
+### 📚 **docs/guides/**
+General guides and tutorials
+- `SETUP.md` - Initial setup guide
+- `COMMANDS.md` - Common commands
+- `QUICK_REFERENCE_MULTITENANT.md` - Multi-tenant quick reference
 
 ---
 
-## 🚀 Where to Start
+## 🛠️ Scripts Organization
 
-1. **Setup**: Follow `docs/QUICK_START.md`
-2. **Database**: Run `docs/DATABASE_SCHEMA.sql`
-3. **Implementation**: Use prompts from `docs/COPILOT_SCAFFOLDING.md`
-4. **Reference**: Check `docs/API_CONTRACTS.md` for endpoints
-5. **Architecture**: Review `docs/ARCHITECTURE.md` for design decisions
+### 🚀 **scripts/deployment/**
+Deployment and build automation
+- `deploy-production.sh` - Linux production deployment
+- `deploy-production.ps1` - Windows production deployment
+- `deploy-cloud.ps1` - Cloud deployment script
+- `build-production.ps1` - Production build script
+- `start-production.ps1` - Start production server
+- `start-servers.bat` - Start all services
 
----
+### 🧪 **scripts/testing/**
+Testing and validation scripts
+- `test-platform-admin.ps1` - Platform admin tests
+- `test-register.ps1` - Registration tests
+- `test-disable-module.ps1` - Module control tests
+- `simple-admin-test.ps1` - Simple admin tests
 
-## 📊 Progress Tracking
-
-| Phase | Module | Status | Files | Priority |
-|-------|--------|--------|-------|----------|
-| 1 | Auth | To Do | 10 | HIGH |
-| 1 | Organization | To Do | 12 | HIGH |
-| 1 | RBAC | To Do | 8 | HIGH |
-| 2 | Customers | To Do | 8 | HIGH |
-| 2 | Items | To Do | 8 | HIGH |
-| 2 | Taxes | To Do | 6 | MEDIUM |
-| 2 | Currencies | To Do | 6 | MEDIUM |
-| 3 | Quotes | To Do | 12 | HIGH |
-| 4 | Invoices | To Do | 12 | HIGH |
-| 5 | Payments | To Do | 10 | HIGH |
-| 6 | Accounting | To Do | 15 | MEDIUM |
-| 7 | Reports | To Do | 12 | MEDIUM |
-| 8 | Public/API | To Do | 8 | LOW |
+### 👨‍💼 **scripts/admin/**
+Administrative utility scripts
+- `platform-admin-check.ps1` - Check admin setup
+- `platform-admin-dashboard.ps1` - Dashboard utilities
+- `admin-panel.ps1` - Admin panel tools
+- `add-firewall-rule.ps1` - Firewall configuration
 
 ---
 
-## 🎓 Learning Resources
+## 🎯 Quick Navigation
 
-Each major technology has been chosen for specific reasons:
+### For Developers
+1. **Start Here**: [`docs/START_HERE.md`](START_HERE.md)
+2. **Quick Start**: [`docs/QUICK_START.md`](QUICK_START.md)
+3. **Architecture**: [`docs/ARCHITECTURE.md`](ARCHITECTURE.md)
+4. **Setup**: [`docs/guides/SETUP.md`](guides/SETUP.md)
 
-- **NestJS**: Enterprise-grade Node.js framework with dependency injection
-- **Prisma**: Type-safe ORM with excellent TypeScript support
-- **PostgreSQL**: ACID-compliant database perfect for financial data
-- **React**: Most popular frontend framework with large ecosystem
-- **Ant Design**: Enterprise UI library with complete component set
-- **Zustand**: Lightweight state management without boilerplate
+### For DevOps
+1. **Deployment**: [`docs/deployment/DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md)
+2. **Performance**: [`docs/performance/PERFORMANCE_OPTIMIZATION_GUIDE.md`](performance/PERFORMANCE_OPTIMIZATION_GUIDE.md)
+3. **Security**: [`docs/security/SECURITY_IMPLEMENTATION_GUIDE.md`](security/SECURITY_IMPLEMENTATION_GUIDE.md)
+
+### For System Admins
+1. **Admin Guide**: [`docs/admin/ADMIN_CONTROL_PANEL_GUIDE.md`](admin/ADMIN_CONTROL_PANEL_GUIDE.md)
+2. **Permissions**: [`docs/admin/PERMISSIONS_GUIDE.md`](admin/PERMISSIONS_GUIDE.md)
+3. **User Guide**: [`docs/admin/USER_GUIDE.md`](admin/USER_GUIDE.md)
+
+### For API Users
+1. **API Docs**: [`docs/api/API_DOCUMENTATION.md`](api/API_DOCUMENTATION.md)
 
 ---
 
-**Total Project Scope**: ~200+ files when complete
-**Current Status**: Foundation complete, ready for implementation
-**Next Action**: Follow QUICK_START.md to begin Phase 1
+## 🗂️ File Organization Principles
+
+### ✅ What Stays in Root
+- Essential config files (`.env`, `docker-compose.yml`, `ecosystem.config.js`)
+- Main README.md
+- Package manager files (`package.json`, `package-lock.json`)
+- Version control (`.git`, `.gitignore`)
+- Source code folders (`backend/`, `frontend/`)
+
+### 📁 What Goes in docs/
+- All markdown documentation
+- Guides, tutorials, and references
+- Architecture and design docs
+- API documentation
+
+### 🛠️ What Goes in scripts/
+- All automation scripts (.ps1, .sh, .bat)
+- Build and deployment scripts
+- Testing and validation scripts
+- Administrative utilities
+
+---
+
+## 🔄 Maintenance
+
+### Adding New Documentation
+1. Identify the category (deployment, security, features, etc.)
+2. Place in the appropriate `docs/` subfolder
+3. Update this file if creating a new category
+4. Link from relevant README files
+
+### Adding New Scripts
+1. Identify the purpose (deployment, testing, admin)
+2. Place in the appropriate `scripts/` subfolder
+3. Make executable: `chmod +x script.sh` (Linux)
+4. Document in README if it's a critical script
+
+---
+
+## 📊 Statistics
+
+### Documentation
+- **Total docs**: 80+ markdown files
+- **Categories**: 8 main categories
+- **Total lines**: ~15,000+ lines of documentation
+
+### Scripts
+- **Total scripts**: 15+ automation scripts
+- **Categories**: 3 main categories
+- **Languages**: PowerShell, Bash, Batch
+
+---
+
+## 🎉 Benefits of This Structure
+
+✅ **Easy Navigation** - Everything is categorized  
+✅ **Scalable** - Easy to add new docs/scripts  
+✅ **Professional** - Clean root directory  
+✅ **Maintainable** - Clear organization principles  
+✅ **Discoverable** - Logical folder structure  
+
+---
+
+**Last Updated**: March 12, 2026  
+**Organization Version**: 1.0  
+**Status**: ✅ Organized & Clean

@@ -9,6 +9,11 @@ services:
       POSTGRES_DB: triverse_erp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      # Performance tuning for 2GB server
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 512MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_MAX_CONNECTIONS: 100
     ports:
       - "5432:5432"
     volumes:
@@ -19,6 +24,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # Resource limits for 2GB server (allocate ~512MB for DB)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   # Optional: PostgreSQL Admin UI
   pgadmin:
@@ -32,6 +46,15 @@ services:
       - "5050:80"
     depends_on:
       - postgres
+    # Resource limits for pgAdmin (lightweight)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
 volumes:
   postgres_data:

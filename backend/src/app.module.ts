@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/c
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 
 // Shared
@@ -59,6 +60,13 @@ import { PlatformAdminModule } from './modules/platform-admin/platform-admin.mod
 
     // Scheduled tasks (cron jobs)
     ScheduleModule.forRoot(),
+
+    // In-memory caching for performance
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300000, // 5 minutes default TTL
+      max: 100, // Maximum number of items in cache
+    }),
 
     // Rate limiting - Strict limits for auth, lenient for others
     ThrottlerModule.forRoot([

@@ -28,8 +28,6 @@ import {
   StopOutlined,
   PlusOutlined,
   ReloadOutlined,
-  EyeOutlined,
-  EditOutlined,
   DeleteOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,

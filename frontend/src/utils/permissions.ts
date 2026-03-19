@@ -1,5 +1,7 @@
 import type { UserRole } from '../store/authStore';
 
+
+
 // Define permissions for each feature
 export const Permissions = {
   // Dashboard
@@ -71,8 +73,11 @@ export type Permission = keyof typeof Permissions;
 /**
  * Check if a user has a specific permission based on their role
  */
+export const SUPER_ROLE = 'ADMINISTRATOR' as const;
+
 export const hasPermission = (userRole: UserRole | undefined, permission: Permission): boolean => {
   if (!userRole) return false;
+  if (userRole === SUPER_ROLE) return true;    // <-- super user bypass
   return (Permissions[permission] as readonly string[]).includes(userRole);
 };
 

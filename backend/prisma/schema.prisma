@@ -274,6 +274,13 @@ model employee_profiles {
   updated_at              DateTime            @updatedAt
   employee_profiles       employee_profiles?  @relation("employee_profilesToemployee_profiles", fields: [reporting_to_id], references: [id])
   other_employee_profiles employee_profiles[] @relation("employee_profilesToemployee_profiles")
+  head_departments        Department[]        @relation("department_hod")
+  assigned_subjects       DepartmentSubject[] @relation("subject_teacher")
+  coordinated_programs    DepartmentProgram[] @relation("program_coordinator")
+  advised_semesters       ProgramSemester[]   @relation("semester_advisor")
+  taught_curriculum_items CurriculumSubject[] @relation("curriculum_faculty")
+  student_enrollments     StudentEnrollment[]
+  registered_subjects     StudentSubjectRegistration[]
   users                   users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([department])
@@ -1070,6 +1077,65 @@ enum customer_type {
   business
 }
 
+enum department_status {
+  active
+  inactive
+  archived
+}
+
+enum subject_type {
+  core
+  elective
+  lab
+}
+
+enum subject_status {
+  active
+  inactive
+  archived
+}
+
+enum program_status {
+  active
+  inactive
+  archived
+}
+
+enum program_level {
+  diploma
+  undergraduate
+  postgraduate
+  doctorate
+  certificate
+}
+
+enum semester_status {
+  planned
+  active
+  completed
+  archived
+}
+
+enum curriculum_subject_status {
+  planned
+  active
+  archived
+}
+
+enum enrollment_status {
+  active
+  promoted
+  graduated
+  dropped
+  deferred
+}
+
+enum registration_status {
+  registered
+  dropped
+  completed
+}
+
 enum invoice_status {
   draft
   final
@@ -1165,6 +1231,7 @@ enum user_role_type {
   MARKETING
   RND
   EMPLOYEE
+  STUDENT
 }
 
 enum user_status {
@@ -1533,4 +1600,152 @@ enum match_status {
   discrepancy
   approved
   rejected
+}
+
+model Department {
+  id               String             @id @default(uuid())
+  name             String
+  code             String             @unique
+  description      String?
+  status           department_status  @default(active)
+  hodProfileId     String?            @unique @db.Uuid
+  contactEmail     String?
+  contactPhone     String?
+  location         String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  headOfDepartment employee_profiles? @relation("department_hod", fields: [hodProfileId], references: [id], onDelete: SetNull)
+  subjects         DepartmentSubject[]
+  programs         DepartmentProgram[]
+
+  @@index([status])
+}
+
+model DepartmentSubject {
+  id               String             @id @default(uuid()) @db.Uuid
+  departmentId     String
+  teacherProfileId String?            @db.Uuid
+  name             String
+  code             String
+  description      String?
+  type             subject_type       @default(core)
+  status           subject_status     @default(active)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  department       Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  teacher          employee_profiles? @relation("subject_teacher", fields: [teacherProfileId], references: [id], onDelete: SetNull)
+  curriculumItems  CurriculumSubject[]
+
+  @@unique([departmentId, code])
+  @@index([departmentId, status])
+  @@index([teacherProfileId])
+}
+
+model DepartmentProgram {
+  id                   String              @id @default(uuid()) @db.Uuid
+  departmentId         String
+  coordinatorProfileId String?             @db.Uuid
+  name                 String
+  code                 String
+  level                program_level       @default(undergraduate)
+  durationSemesters    Int                 @default(8)
+  intakeCapacity       Int?
+  status               program_status      @default(active)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  department           Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  coordinator          employee_profiles?  @relation("program_coordinator", fields: [coordinatorProfileId], references: [id], onDelete: SetNull)
+  semesters            ProgramSemester[]
+  studentEnrollments   StudentEnrollment[]
+
+  @@unique([departmentId, code])
+  @@index([departmentId, status])
+  @@index([coordinatorProfileId])
+}
+
+model ProgramSemester {
+  id               String             @id @default(uuid()) @db.Uuid
+  programId        String             @db.Uuid
+  advisorProfileId String?            @db.Uuid
+  semesterNumber   Int
+  section          String?
+  academicYear     String?
+  studentCapacity  Int?
+  status           semester_status    @default(planned)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  program          DepartmentProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  advisor          employee_profiles? @relation("semester_advisor", fields: [advisorProfileId], references: [id], onDelete: SetNull)
+  curriculum       CurriculumSubject[]
+  studentEnrollments StudentEnrollment[]
+
+  @@unique([programId, semesterNumber, section])
+  @@index([programId, status])
+  @@index([advisorProfileId])
+}
+
+model CurriculumSubject {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  semesterId         String                    @db.Uuid
+  subjectId          String                    @db.Uuid
+  facultyProfileId   String?                   @db.Uuid
+  academicYear       String?
+  credits            Int                       @default(4)
+  theoryHours        Int                       @default(3)
+  labHours           Int                       @default(0)
+  internalWeightage  Int                       @default(40)
+  externalWeightage  Int                       @default(60)
+  isElective         Boolean                   @default(false)
+  status             curriculum_subject_status @default(active)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  semester           ProgramSemester           @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  subject            DepartmentSubject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  faculty            employee_profiles?        @relation("curriculum_faculty", fields: [facultyProfileId], references: [id], onDelete: SetNull)
+  registrations      StudentSubjectRegistration[]
+
+  @@unique([semesterId, subjectId])
+  @@index([semesterId, status])
+  @@index([subjectId])
+  @@index([facultyProfileId])
+}
+
+model StudentEnrollment {
+  id               String             @id @default(uuid()) @db.Uuid
+  studentProfileId String             @unique @db.Uuid
+  programId        String             @db.Uuid
+  semesterId       String             @db.Uuid
+  rollNumber       String?
+  academicYear     String?
+  admissionDate    DateTime?          @db.Date
+  status           enrollment_status  @default(active)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  student          employee_profiles  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  program          DepartmentProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  semester         ProgramSemester    @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  registrations    StudentSubjectRegistration[]
+
+  @@index([programId, status])
+  @@index([semesterId, status])
+  @@index([academicYear])
+}
+
+model StudentSubjectRegistration {
+  id                   String                @id @default(uuid()) @db.Uuid
+  studentProfileId     String                @db.Uuid
+  enrollmentId         String                @db.Uuid
+  curriculumSubjectId  String                @db.Uuid
+  registrationDate     DateTime?             @db.Date
+  status               registration_status   @default(registered)
+  isAutoRegistered     Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  student              employee_profiles     @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  enrollment           StudentEnrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  curriculumSubject    CurriculumSubject     @relation(fields: [curriculumSubjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, curriculumSubjectId])
+  @@index([enrollmentId, status])
+  @@index([curriculumSubjectId, status])
 }

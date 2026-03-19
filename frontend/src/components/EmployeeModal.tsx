@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, Select, DatePicker, App } from 'antd';
 import { Employee, employeeService, CreateEmployeeDto, UpdateEmployeeDto } from '../services/employee.service';
+import { departmentService } from '../services/department.service';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -24,6 +25,7 @@ const roles = [
   'MARKETING',
   'RND',
   'EMPLOYEE',
+  'STUDENT',
 ];
 
 const EmployeeModal: React.FC<EmployeeModalProps> = ({
@@ -36,6 +38,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -56,6 +59,23 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       }
     }
   }, [visible, employee, form]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const loadDepartments = async () => {
+      try {
+        const data = await departmentService.getAll();
+        setDepartments(data.map((department) => department.name));
+      } catch (error) {
+        message.error('Failed to load departments');
+      }
+    };
+
+    void loadDepartments();
+  }, [visible, message]);
 
   const handleSubmit = async () => {
     try {
@@ -167,9 +187,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         <Form.Item
           name="department"
           label="Department"
-          rules={[{ required: true, message: 'Please enter department' }]}
+          rules={[{ required: true, message: 'Please select department' }]}
         >
-          <Input placeholder="e.g. Engineering, Sales, Marketing" />
+          <Select
+            placeholder="Select department"
+            showSearch
+            filterOption={(input, option) =>
+              String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+            }
+          >
+            {departments.map((department) => (
+              <Option key={department} value={department}>
+                {department}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
 
         <Form.Item

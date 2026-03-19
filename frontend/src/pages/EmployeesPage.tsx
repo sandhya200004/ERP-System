@@ -131,6 +131,7 @@ const EmployeesPage: React.FC = () => {
       MARKETING: 'magenta',
       RND: 'geekblue',
       EMPLOYEE: 'default',
+      STUDENT: 'gold',
     };
     return colors[role] || 'default';
   };

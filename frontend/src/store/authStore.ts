@@ -6,7 +6,9 @@ export type UserRole =
   | 'LEAD_MANAGER'
   | 'DM_EXECUTIVE'
   | 'EMPLOYEE'
-  | 'DEVELOPER';
+  | 'DEVELOPER'
+  | 'STUDENT'
+  | 'ADMINISTRATOR';
 
 interface User {
   id: string;

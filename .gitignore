@@ -23,6 +23,7 @@ coverage/
 .parcel-cache/
 .next/
 out/
+*.tsbuildinfo
 
 # OS
 Thumbs.db

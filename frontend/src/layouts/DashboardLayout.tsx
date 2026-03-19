@@ -3,26 +3,13 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Typography, Space, Button, Drawer } from 'antd';
 import {
   DashboardOutlined,
-  UserOutlined,
-  ShoppingOutlined,
-  FileTextOutlined,
+  CalendarOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  DollarOutlined,
-  FileSearchOutlined,
-  ClockCircleOutlined,
-  TrophyOutlined,
-  BarChartOutlined,
   SettingOutlined,
-  SecurityScanOutlined,
-  ControlOutlined,
-  ShopOutlined,
-  ShoppingCartOutlined,
-  InboxOutlined,
-  HomeOutlined,
-  BookOutlined,
-  AccountBookOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import NotificationBell from '../components/NotificationBell';
 import { useAuthStore } from '../store/authStore';
@@ -30,19 +17,31 @@ import { useAuthStore } from '../store/authStore';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const DashboardLayout: React.FC = () => {
+interface DashboardLayoutProps {
+  children?: React.ReactNode;
+}
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Initialize with correct value on first render
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { user, company, logout } = useAuthStore();
+  const selectedMenuKey = location.pathname.startsWith('/departments') ? '/departments' : location.pathname;
 
   // Detect mobile screen
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth < 768) {
+      const isMobileScreen = window.innerWidth < 768;
+      setIsMobile(isMobileScreen);
+      if (isMobileScreen) {
         setCollapsed(true);
       }
     };
@@ -58,15 +57,6 @@ const DashboardLayout: React.FC = () => {
   };
 
   const userMenuItems = [
-    {
-      key: 'profile',
-      label: 'Profile',
-      icon: <UserOutlined />,
-      onClick: () => navigate('/profile'),
-    },
-    {
-      type: 'divider' as const,
-    },
     {
       key: 'logout',
       label: 'Logout',
@@ -84,177 +74,30 @@ const DashboardLayout: React.FC = () => {
         key: '/',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
-        onClick: () => navigate('/'),
+        onClick: () => navigate('/dashboard'),
         roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
       },
       {
-        key: '/attendance',
-        icon: <ClockCircleOutlined />,
-        label: 'Attendance',
-        onClick: () => navigate('/attendance'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
-      },
-      {
-        key: '/kpi',
-        icon: <TrophyOutlined />,
-        label: 'My KPI',
-        onClick: () => navigate('/kpi'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
-      },
-      {
-        key: '/customers',
-        icon: <UserOutlined />,
-        label: 'Customers',
-        onClick: () => navigate('/customers'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
-      },
-      {
-        key: '/items',
-        icon: <ShoppingOutlined />,
-        label: 'Products/Services',
-        onClick: () => navigate('/items'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/invoices',
-        icon: <FileTextOutlined />,
-        label: 'Invoices',
-        onClick: () => navigate('/invoices'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
-      },
-      {
-        key: '/payments',
-        icon: <DollarOutlined />,
-        label: 'Payments',
-        onClick: () => navigate('/payments'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/expenses',
-        icon: <DollarOutlined />,
-        label: 'Expenses',
-        onClick: () => navigate('/expenses'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/leads',
-        icon: <UserOutlined />,
-        label: 'Leads',
-        onClick: () => navigate('/leads'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
-      },
-      {
-        key: '/proposals',
-        icon: <FileSearchOutlined />,
-        label: 'Proposals',
-        onClick: () => navigate('/proposals'),
-        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE'],
-      },
-      {
-        key: '/vendors',
-        icon: <ShopOutlined />,
-        label: 'Vendors',
-        onClick: () => navigate('/vendors'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/purchase-orders',
-        icon: <ShoppingCartOutlined />,
-        label: 'Purchase Orders',
-        onClick: () => navigate('/purchase-orders'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/goods-receipts',
-        icon: <InboxOutlined />,
-        label: 'Goods Receipts',
-        onClick: () => navigate('/goods-receipts'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/supplier-invoices',
-        icon: <FileTextOutlined />,
-        label: 'Supplier Invoices',
-        onClick: () => navigate('/supplier-invoices'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/warehouses',
-        icon: <HomeOutlined />,
-        label: 'Warehouses',
-        onClick: () => navigate('/warehouses'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/inventory',
-        icon: <InboxOutlined />,
-        label: 'Inventory',
-        onClick: () => navigate('/inventory'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/chart-of-accounts',
-        icon: <AccountBookOutlined />,
-        label: 'Chart of Accounts',
-        onClick: () => navigate('/chart-of-accounts'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/journal-entries',
-        icon: <BookOutlined />,
-        label: 'Journal Entries',
-        onClick: () => navigate('/journal-entries'),
+        key: '/departments',
+        icon: <SettingOutlined />,
+        label: 'Departments',
+        onClick: () => navigate('/departments'),
         roles: ['ADMIN', 'LEAD_MANAGER'],
       },
       {
         key: '/employees',
-        icon: <UserOutlined />,
-        label: 'Employees',
+        icon: <TeamOutlined />,
+        label: 'Staff',
         onClick: () => navigate('/employees'),
         roles: ['ADMIN', 'LEAD_MANAGER'],
       },
       {
-        key: '/kpi-review',
-        icon: <BarChartOutlined />,
-        label: 'KPI Review',
-        onClick: () => navigate('/kpi-review'),
+        key: '/attendance',
+        icon: <CalendarOutlined />,
+        label: 'Attendance',
+        onClick: () => navigate('/attendance'),
         roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/reports',
-        icon: <BarChartOutlined />,
-        label: 'Reports',
-        onClick: () => navigate('/reports'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      },
-      {
-        key: '/settings',
-        icon: <SettingOutlined />,
-        label: 'Settings',
-        onClick: () => navigate('/settings'),
-        roles: ['ADMIN'],
-      },
-      {
-        key: '/role-settings',
-        icon: <SecurityScanOutlined />,
-        label: 'Role Settings',
-        onClick: () => navigate('/role-settings'),
-        roles: ['ADMIN'],
-      },
-      {
-        key: '/feature-control',
-        icon: <ControlOutlined />,
-        label: 'Feature Control',
-        onClick: () => navigate('/feature-control'),
-        roles: ['ADMIN'],
-      },
-      {
-        key: '/admin/security',
-        icon: <SecurityScanOutlined />,
-        label: 'Security Dashboard',
-        onClick: () => navigate('/admin/security'),
-        roles: ['ADMIN'],
-      },
+      }
     ];
 
     // Filter items based on user role
@@ -312,7 +155,7 @@ const DashboardLayout: React.FC = () => {
       </div>
       <Menu
         mode="inline"
-        selectedKeys={[location.pathname]}
+        selectedKeys={[selectedMenuKey]}
         items={menuItems}
         theme="dark"
         style={{ 
@@ -325,7 +168,7 @@ const DashboardLayout: React.FC = () => {
   );
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#000000' }}>
+    <Layout style={{ minHeight: '100vh', background: '#000000', display: 'flex' }}>
       {/* Desktop Sider */}
       {!isMobile && (
         <Sider 
@@ -333,10 +176,12 @@ const DashboardLayout: React.FC = () => {
           collapsible 
           collapsed={collapsed} 
           width={220} 
+          collapsedWidth={80}
           theme="dark" 
           style={{ 
             background: '#000000',
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            flexShrink: 0
           }}
         >
           {siderContent}
@@ -397,7 +242,7 @@ const DashboardLayout: React.FC = () => {
           background: '#000000', 
           minHeight: 280 
         }}>
-          <Outlet />
+          {children || <Outlet />}
         </Content>
       </Layout>
     </Layout>

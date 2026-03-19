@@ -99,8 +99,5 @@ export class AuthResponseDto {
   };
 
   @ApiProperty({ required: false })
-  company?: {
-    id: string;
-    name: string;
-  };
+ company?: { id: string; name: string } | null;
 }

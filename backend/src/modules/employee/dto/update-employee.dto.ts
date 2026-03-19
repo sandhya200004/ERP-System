@@ -33,6 +33,7 @@ export class UpdateEmployeeDto {
     'MARKETING',
     'RND',
     'EMPLOYEE',
+    'STUDENT',
   ])
   role?: string;
 

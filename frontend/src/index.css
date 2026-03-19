@@ -21,7 +21,6 @@ body {
   background: #000000 !important;
   color: #ffffff;
   overflow-x: hidden;
-  transition: opacity 0.3s ease;
 }
 
 #root {
@@ -30,7 +29,6 @@ body {
     sans-serif !important;
   background: #000000 !important;
   min-height: 100vh;
-  animation: fadeIn 0.3s ease-in;
 }
 
 code {
@@ -248,6 +246,18 @@ code {
   /* Make tables scrollable on mobile */
   .ant-table {
     overflow-x: auto;
+  }
+
+  .departments-page {
+    padding: 16px;
+  }
+
+  .department-cell__header {
+    flex-direction: column;
+  }
+
+  .department-cell__meta {
+    justify-content: flex-start;
   }
   
   .ant-table-wrapper {
@@ -663,11 +673,6 @@ label {
   transition: all 0.2s ease;
 }
 
-/* Modal animations */
-.ant-modal {
-  animation: scaleIn 0.3s ease-out;
-}
-
 /* Button transitions */
 .ant-btn {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -684,6 +689,220 @@ label {
 /* Page transition wrapper */
 .page-transition-wrapper {
   animation: fadeIn 0.3s ease-in;
+}
+
+.departments-page {
+  padding: 24px;
+}
+
+.departments-metric-card {
+  border-radius: 20px !important;
+}
+
+.departments-metric-card--primary {
+  background:
+    linear-gradient(145deg, rgba(168, 85, 247, 0.14), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.04) !important;
+}
+
+.departments-metric-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.departments-metric-card .ant-statistic-content {
+  font-size: 34px !important;
+}
+
+.departments-metric-card .ant-typography {
+  color: rgba(255, 255, 255, 0.62) !important;
+  line-height: 1.6;
+}
+
+.departments-oversight-card {
+  border-radius: 24px !important;
+  overflow: hidden;
+}
+
+.departments-oversight-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.departments-oversight-card__title .ant-typography:first-child {
+  font-size: 22px;
+}
+
+.departments-oversight-card__title .ant-typography:last-child {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.departments-oversight-card__alert {
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+}
+
+.departments-table .ant-table {
+  background: transparent !important;
+}
+
+.departments-table .ant-table-thead > tr > th {
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.departments-table .ant-table-tbody > tr > td {
+  padding-top: 22px !important;
+  padding-bottom: 22px !important;
+  vertical-align: top;
+}
+
+.departments-table__row > td:first-child {
+  border-left: 1px solid transparent;
+}
+
+.departments-table__row:hover > td:first-child {
+  border-left-color: rgba(168, 85, 247, 0.45);
+}
+
+.department-cell {
+  max-width: 360px;
+}
+
+.department-cell__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.department-cell__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.department-cell__title {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.department-cell__code {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.department-cell__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.department-chip {
+  margin-inline-end: 0 !important;
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+}
+
+.department-chip--muted {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.department-cell__description.ant-typography {
+  margin-bottom: 0 !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+  line-height: 1.7;
+}
+
+.department-status-tag {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 999px !important;
+}
+
+.department-person {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.department-person__avatar {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(79, 70, 229, 0.92)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.2);
+}
+
+.department-person__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.department-person__name {
+  font-weight: 600;
+}
+
+.department-person__role {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.department-people {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.department-people__metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 110px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.department-people__label {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.department-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.department-contact__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.department-contact__line .anticon {
+  color: rgba(168, 85, 247, 0.86);
+}
+
+.department-updated {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.department-updated .ant-typography:last-child {
+  color: rgba(255, 255, 255, 0.58) !important;
+}
+
+.department-actions .ant-btn {
+  border-radius: 12px !important;
 }
 
 /* Loading overlay */
@@ -731,12 +950,10 @@ html, body, #root {
 /* Prevent white flash during navigation */
 .ant-layout {
   background: #000000 !important;
-  transition: all 0.3s ease;
 }
 
 .ant-layout-content {
-  transition: all 0.3s ease;
-  animation: fadeIn 0.3s ease-in;
+  transition: background-color 0.3s ease;
 }
 
 /* Reduce motion for users who prefer it */

@@ -31,6 +31,7 @@ export class CreateEmployeeDto {
     'MARKETING',
     'RND',
     'EMPLOYEE',
+    'STUDENT',
   ])
   role: string;
 

@@ -26,6 +26,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
 import { SettingsModule } from './modules/settings/settings.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
+import { AuditModule } from './shared/audit/audit.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
     RoleModule,
     PublicModule,
     AttendanceModule,
+    AuditModule,
     EmployeeModule,
     SettingsModule,
     DepartmentsModule,

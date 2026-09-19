@@ -130,7 +130,7 @@ export class AttendanceService {
     }
 
     // Calculate work hours
-    const checkInTime = attendance.check_in.getTime();
+    const checkInTime = attendance.check_in!.getTime();
     const checkOutTime = new Date().getTime();
     const hoursWorked = (checkOutTime - checkInTime) / (1000 * 60 * 60);
 

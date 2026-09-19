@@ -75,7 +75,7 @@ function App() {
                 }
               />
 
-              <Route path="/attendance" element={<Suspense fallback={<LoadingFallback />}><AttendancePage /></Suspense>} />
+              <Route path="/attendance" element={<ProtectedRoute><Suspense fallback={<LoadingFallback />}><AttendancePage /></Suspense></ProtectedRoute>} />
               <Route path="/employees" element={<Suspense fallback={<LoadingFallback />}><EmployeesPage /></Suspense>} />
               <Route path="/departments" element={<Suspense fallback={<LoadingFallback />}><DepartmentsPage /></Suspense>} />
               <Route path="/departments/:id" element={<Suspense fallback={<LoadingFallback />}><DepartmentDetailsPage /></Suspense>} />

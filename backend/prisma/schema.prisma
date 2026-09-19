@@ -1221,17 +1221,21 @@ enum tax_type {
 }
 
 enum user_role_type {
-  CEO
-  CTO
-  CMO
-  HR
+  ADMIN
   MANAGER
-  DEVELOPER
-  DESIGNER
-  MARKETING
-  RND
+  LEAD_MANAGER
   EMPLOYEE
+  DEVELOPER
+  // ADD THESE BACK:
+  SUPER_ADMIN
+  PRINCIPAL
+  TEACHER
   STUDENT
+  PARENT
+  HR
+  WARDEN
+  ACCOUNTANT
+  LIBRARIAN
 }
 
 enum user_status {

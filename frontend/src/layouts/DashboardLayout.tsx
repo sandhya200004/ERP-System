@@ -78,6 +78,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
       },
       {
+        key: '/attendance',
+        icon: <CalendarOutlined />,
+        label: 'Attendance',
+        onClick: () => navigate('/attendance'),
+        roles: ['ADMIN', 'LEAD_MANAGER', 'DM_EXECUTIVE', 'EMPLOYEE', 'DEVELOPER'],
+      },
+      {
         key: '/departments',
         icon: <SettingOutlined />,
         label: 'Departments',
@@ -91,13 +98,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         onClick: () => navigate('/employees'),
         roles: ['ADMIN', 'LEAD_MANAGER'],
       },
-      {
-        key: '/attendance',
-        icon: <CalendarOutlined />,
-        label: 'Attendance',
-        onClick: () => navigate('/attendance'),
-        roles: ['ADMIN', 'LEAD_MANAGER'],
-      }
     ];
 
     // Filter items based on user role

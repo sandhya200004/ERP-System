@@ -176,7 +176,7 @@ export class AuthService {
                 companies: true,
                 roles: true,
               },
-              take: 1,
+            
             },
           },
         },

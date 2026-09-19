@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Button,
@@ -11,13 +11,10 @@ import {
   Statistic,
   Calendar,
   Badge,
-  DatePicker,
   Select,
   Modal,
-  Alert,
-  Spin,
-  Divider,
   App,
+  Tooltip,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -25,7 +22,8 @@ import {
   CloseCircleOutlined,
   HistoryOutlined,
   EnvironmentOutlined,
-  WarningOutlined
+  WarningOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useAuthStore } from '../store/authStore';
@@ -33,7 +31,6 @@ import { attendanceService } from '../services/attendance.service';
 import EmployeeBadgeModal from '../components/EmployeeBadgeModal';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 interface AttendanceRecord {
   id: string;
@@ -44,145 +41,111 @@ interface AttendanceRecord {
   checkOut?: string;
   status: 'present' | 'late' | 'absent' | 'half-day';
   workingHours?: number;
-  notes?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
+}
+
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  distance: number;
+  isValid: boolean;
+  timestamp: number;
 }
 
 const AttendancePage: React.FC = () => {
   const { message } = App.useApp();
+  const { user } = useAuthStore();
+
+  // RBCA: Backend will enforce permissions via API guards
+  // Frontend just needs to handle error responses gracefully
+  const canViewTeam = user?.role === 'ADMIN' || user?.role === 'LEAD_MANAGER';
+
+  // Office Configuration
+  const OFFICE_CONFIG = {
+    location: { latitude: 18.7351, longitude: 73.6758, name: 'Main Office' },
+    radiusMeters: 500,
+    startTime: '09:30',
+    endTime: '18:30',
+    lateThresholdMinutes: 15,
+  };
+
+  // State Management
   const [loading, setLoading] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
-  const [checkingLocation, setCheckingLocation] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
-  const { user } = useAuthStore();
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [viewMode, setViewMode] = useState<'my' | 'team'>('my');
+  const [teamLoading, setTeamLoading] = useState(false);
 
-  // Office Location (CodeServeTech Solutions)
-  // From Google Maps embed: 18.73805058239819, 73.66970757550314
-  // Note: You can update these coordinates by clicking "Update Office Location" button below
-  const OFFICE_LOCATION = {
-    latitude: 18.73805058239819,
-    longitude: 73.66970757550314,
-    name: 'CodeServeTech Solutions'
-  };
-  
-  // Maximum allowed distance from office in meters
-  // Increased to 500m to account for GPS accuracy variations in buildings
-  // GPS can be inaccurate by 100-500m indoors or near tall buildings
-  const MAX_DISTANCE_METERS = 500;
+  // ============== Location Utilities ==============
+  const calculateDistance = useCallback(
+    (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371e3;
+      const φ1 = (lat1 * Math.PI) / 180;
+      const φ2 = (lat2 * Math.PI) / 180;
+      const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+      const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    },
+    []
+  );
 
-  const OFFICE_START_TIME = '09:30';
-  const OFFICE_END_TIME = '18:30';
-  const LATE_THRESHOLD_MINUTES = 15;
-
-  useEffect(() => {
-    fetchTodayAttendance();
-    fetchAttendanceHistory();
-    requestLocationPermission();
-  }, []);
-
-  // Refetch history when selected month changes
-  useEffect(() => {
-    fetchAttendanceHistory();
-  }, [selectedMonth]);
-
-  // Request location permission on component mount
-  const requestLocationPermission = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('Location permission denied:', error);
-          message.warning('Location permission is required for attendance. Please enable location access.');
-        }
-      );
-    } else {
-      message.error('Geolocation is not supported by your browser');
+  const verifyLocationOnce = useCallback(async (): Promise<LocationData | null> => {
+    if (!('geolocation' in navigator)) {
+      message.error('Geolocation not supported by your browser');
+      return null;
     }
-  };
 
-  // Calculate distance between two coordinates using Haversine formula
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number => {
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    // Cache location for 30 seconds to avoid redundant calls
+    if (location && Date.now() - location.timestamp < 30000) {
+      return location;
+    }
 
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distance in meters
-  };
-
-  // Verify if user is within office location
-  const verifyLocation = (): Promise<{ isValid: boolean; distance: number; userLocation: { latitude: number; longitude: number } }> => {
-    return new Promise((resolve, reject) => {
-      if (!('geolocation' in navigator)) {
-        reject(new Error('Geolocation not supported'));
-        return;
-      }
-
-      setCheckingLocation(true);
-
+    return new Promise((resolve) => {
+      setVerifying(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const userLat = position.coords.latitude;
-          const userLon = position.coords.longitude;
-          
           const distance = calculateDistance(
-            userLat,
-            userLon,
-            OFFICE_LOCATION.latitude,
-            OFFICE_LOCATION.longitude
+            position.coords.latitude,
+            position.coords.longitude,
+            OFFICE_CONFIG.location.latitude,
+            OFFICE_CONFIG.location.longitude
           );
 
-          setCurrentLocation({ latitude: userLat, longitude: userLon });
-          setCheckingLocation(false);
-
-          const isValid = distance <= MAX_DISTANCE_METERS;
-          
-          resolve({
-            isValid,
+          const locationData: LocationData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
             distance: Math.round(distance),
-            userLocation: { latitude: userLat, longitude: userLon }
-          });
+            isValid: distance <= OFFICE_CONFIG.radiusMeters,
+            timestamp: Date.now(),
+          };
+
+          setLocation(locationData);
+          setVerifying(false);
+          resolve(locationData);
         },
         (error) => {
-          setCheckingLocation(false);
-          reject(error);
+          setVerifying(false);
+          console.error('Location error:', error);
+          resolve(null);
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
-  };
+  }, [location, calculateDistance, message, OFFICE_CONFIG]);
 
-  const fetchTodayAttendance = async () => {
+  // ============== Data Fetching ==============
+  const fetchTodayStatus = useCallback(async () => {
     try {
-      const todayStatus = await attendanceService.getTodayStatus();
-      if (todayStatus.hasCheckedIn && todayStatus.attendance) {
-        const att = todayStatus.attendance;
+      const status = await attendanceService.getTodayStatus();
+      if (status.hasCheckedIn && status.attendance) {
+        const att = status.attendance;
         const record: AttendanceRecord = {
           id: att.id,
           userId: att.userId,
@@ -190,7 +153,7 @@ const AttendancePage: React.FC = () => {
           date: att.date,
           checkIn: att.checkIn,
           checkOut: att.checkOut,
-          status: 'present', // Calculate based on time if needed
+          status: calculateAttendanceStatus(att.checkIn),
           workingHours: att.hoursWorked,
         };
         setTodayAttendance(record);
@@ -198,252 +161,215 @@ const AttendancePage: React.FC = () => {
         setTodayAttendance(null);
       }
     } catch (error) {
-      console.error('Failed to fetch today attendance:', error);
-      message.error('Failed to fetch attendance');
+      console.error('Failed to fetch today status:', error);
     }
-  };
+  }, []);
 
-  const fetchAttendanceHistory = async () => {
+  const fetchMyAttendance = useCallback(async () => {
     try {
       setLoading(true);
       const startOfMonth = selectedMonth.startOf('month').format('YYYY-MM-DD');
       const endOfMonth = selectedMonth.endOf('month').format('YYYY-MM-DD');
-      
+
       const attendances = await attendanceService.getMyAttendance({
         startDate: startOfMonth,
         endDate: endOfMonth,
       });
-      
-      const mappedHistory: AttendanceRecord[] = attendances.map((att) => {
-        // Calculate status based on check-in time
-        const checkInTime = dayjs(`${att.date} ${att.checkIn}`);
-        const officeStart = dayjs(`${att.date} ${OFFICE_START_TIME}`);
-        const minutesLate = checkInTime.diff(officeStart, 'minute');
-        
-        let status: 'present' | 'late' | 'absent' | 'half-day' = 'present';
-        if (minutesLate > LATE_THRESHOLD_MINUTES) {
-          status = 'late';
-        }
-        
-        return {
-          id: att.id,
-          userId: att.userId,
-          userName: att.user ? `${att.user.firstName} ${att.user.lastName}` : 'Unknown',
-          date: att.date,
-          checkIn: att.checkIn,
-          checkOut: att.checkOut,
-          status,
-          workingHours: att.hoursWorked,
-        };
-      });
-      
-      setAttendanceHistory(mappedHistory);
+
+      const mapped = attendances.map((att) => ({
+        id: att.id,
+        userId: att.userId,
+        userName: att.user ? `${att.user.firstName} ${att.user.lastName}` : 'Unknown',
+        date: att.date,
+        checkIn: att.checkIn,
+        checkOut: att.checkOut,
+        status: calculateAttendanceStatus(att.checkIn),
+        workingHours: att.hoursWorked,
+      }));
+
+      setAttendanceHistory(mapped);
     } catch (error) {
-      console.error('Failed to fetch attendance history:', error);
-      message.error('Failed to fetch history');
+      console.error('Failed to fetch attendance:', error);
+      message.error('Failed to load attendance history');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth, message]);
 
-  const handleCheckIn = async () => {
-    try {
-      // Show badge verification modal first
-      setShowBadgeModal(true);
-      
-      // Wait 2 seconds for face verification
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setShowBadgeModal(false);
-      
-      // First verify location
-      setCheckingLocation(true);
-      const locationResult = await verifyLocation();
-      
-      if (!locationResult.isValid) {
-        Modal.error({
-          title: 'Location Verification Failed',
-          content: (
-            <div>
-              <p>
-                <WarningOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
-                You must be at the office location to check in.
-              </p>
-              <p style={{ marginTop: 12 }}>
-                <strong>Your distance from office:</strong> {locationResult.distance} meters
-              </p>
-              <p>
-                <strong>Maximum allowed:</strong> {MAX_DISTANCE_METERS} meters
-              </p>
-              <p style={{ marginTop: 12, color: '#666' }}>
-                Please move closer to <strong>{OFFICE_LOCATION.name}</strong> to mark your attendance.
-              </p>
-            </div>
-          ),
-        });
-        return;
-      }
-
-      // Call API to check in
-      const result = await attendanceService.checkIn({
-        latitude: locationResult.userLocation.latitude,
-        longitude: locationResult.userLocation.longitude,
-        location: OFFICE_LOCATION.name,
-        notes: `Distance from office: ${locationResult.distance}m`,
-      });
-
-      // Update local state
-      await fetchTodayAttendance();
-      await fetchAttendanceHistory();
-      
-      // Calculate if late
-      const checkInTime = dayjs(`${result.attendance.date} ${result.attendance.checkIn}`);
-      const officeStart = dayjs(`${result.attendance.date} ${OFFICE_START_TIME}`);
-      const minutesLate = checkInTime.diff(officeStart, 'minute');
-      
-      if (minutesLate > LATE_THRESHOLD_MINUTES) {
-        message.warning(
-          `Checked in at ${checkInTime.format('HH:mm')} - You are ${minutesLate} minutes late. Distance from office: ${result.distance}m`
-        );
-      } else {
-        message.success(
-          `Checked in successfully at ${checkInTime.format('HH:mm')}! Distance from office: ${result.distance}m`
-        );
-      }
-    } catch (error: any) {
-      console.error('Check-in error:', error);
-      if (error.response?.data?.message) {
-        message.error(error.response.data.message);
-      } else if (error instanceof GeolocationPositionError) {
-        Modal.error({
-          title: 'Location Access Required',
-          content: (
-            <div>
-              <p>Unable to access your location. Please ensure:</p>
-              <ul>
-                <li>Location services are enabled on your device</li>
-                <li>You have granted location permission to this website</li>
-                <li>You are using a secure (HTTPS) connection</li>
-              </ul>
-            </div>
-          ),
-        });
-      } else {
-        message.error('Failed to check in. Please try again.');
-      }
-    } finally {
-      setCheckingLocation(false);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    if (!todayAttendance) {
-      message.error('Please check in first');
+  const fetchTeamAttendance = useCallback(async () => {
+    if (!canViewTeam) {
+      message.error('Insufficient permissions');
       return;
     }
 
     try {
-      // Show badge verification modal first
+      setTeamLoading(true);
+      const startOfMonth = selectedMonth.startOf('month').format('YYYY-MM-DD');
+      const endOfMonth = selectedMonth.endOf('month').format('YYYY-MM-DD');
+
+      const attendances = await attendanceService.getTeamAttendance({
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      });
+
+      const mapped = attendances.map((att) => ({
+        id: att.id,
+        userId: att.userId,
+        userName: att.user ? `${att.user.firstName} ${att.user.lastName}` : 'Unknown',
+        date: att.date,
+        checkIn: att.checkIn,
+        checkOut: att.checkOut,
+        status: calculateAttendanceStatus(att.checkIn),
+        workingHours: att.hoursWorked,
+      }));
+
+      setAttendanceHistory(mapped);
+    } catch (error) {
+      console.error('Failed to fetch team attendance:', error);
+      message.error('Failed to load team attendance');
+    } finally {
+      setTeamLoading(false);
+    }
+  }, [selectedMonth, viewMode]);
+
+  // Initialize on mount only
+  useEffect(() => {
+    fetchTodayStatus();
+    fetchMyAttendance();
+    verifyLocationOnce();
+
+    // Refresh today status every minute
+    const interval = setInterval(fetchTodayStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refetch when month changes
+  useEffect(() => {
+    if (viewMode === 'my') {
+      fetchMyAttendance();
+    } else {
+      fetchTeamAttendance();
+    }
+  }, [selectedMonth, viewMode]);
+
+  // ============== Helpers ==============
+  const calculateAttendanceStatus = (checkInTime: string): 'present' | 'late' | 'absent' => {
+    if (!checkInTime) return 'absent';
+    const checkIn = dayjs(checkInTime, 'HH:mm:ss');
+    const officeStart = dayjs(OFFICE_CONFIG.startTime, 'HH:mm');
+    const diff = checkIn.diff(officeStart, 'minute');
+    return diff > OFFICE_CONFIG.lateThresholdMinutes ? 'late' : 'present';
+  };
+
+  const calculateMonthlyStats = useCallback(() => {
+    const monthRecords = attendanceHistory;
+    const presentDays = monthRecords.filter(r => r.status === 'present').length;
+    const lateDays = monthRecords.filter(r => r.status === 'late').length;
+    const totalHours = monthRecords.reduce((sum, r) => sum + (r.workingHours || 0), 0);
+    const attendanceRate = monthRecords.length > 0 
+      ? Math.round((((presentDays + lateDays) / monthRecords.length) * 100)) 
+      : 0;
+
+    return {
+      presentDays,
+      lateDays,
+      totalHours: Math.round(totalHours * 100) / 100,
+      attendanceRate,
+    };
+  }, [attendanceHistory]);
+
+  // ============== Attendance Actions ==============
+  const performAttendanceAction = async (action: 'check-in' | 'check-out'): Promise<boolean> => {
+    try {
       setShowBadgeModal(true);
-      
-      // Wait 2 seconds for face verification
       await new Promise(resolve => setTimeout(resolve, 2000));
       setShowBadgeModal(false);
-      
-      // Verify location for checkout as well
-      setCheckingLocation(true);
-      const locationResult = await verifyLocation();
-      
-      if (!locationResult.isValid) {
+
+      const locationData = await verifyLocationOnce();
+      if (!locationData) {
+        message.error('Failed to get location');
+        return false;
+      }
+
+      if (!locationData.isValid) {
         Modal.error({
           title: 'Location Verification Failed',
           content: (
             <div>
               <p>
                 <WarningOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
-                You must be at the office location to check out.
+                You must be at the office to {action === 'check-in' ? 'check in' : 'check out'}.
               </p>
               <p style={{ marginTop: 12 }}>
-                <strong>Your distance from office:</strong> {locationResult.distance} meters
+                <strong>Your distance from office:</strong> {locationData.distance}m
               </p>
               <p>
-                <strong>Maximum allowed:</strong> {MAX_DISTANCE_METERS} meters
+                <strong>Maximum allowed:</strong> {OFFICE_CONFIG.radiusMeters}m
               </p>
             </div>
           ),
         });
-        return;
+        return false;
       }
 
-      // Call API to check out
-      const result = await attendanceService.checkOut({
-        latitude: locationResult.userLocation.latitude,
-        longitude: locationResult.userLocation.longitude,
-        notes: `Distance from office: ${locationResult.distance}m`,
-      });
-      
-      // Update local state
-      await fetchTodayAttendance();
-      await fetchAttendanceHistory();
-      
-      const hoursWorked = result.hoursWorked || 0;
-      message.success(
-        `Checked out - Total working hours: ${hoursWorked.toFixed(2)}. Distance from office: ${result.distance}m`
-      );
-    } catch (error: any) {
-      console.error('Check-out error:', error);
-      if (error.response?.data?.message) {
-        message.error(error.response.data.message);
-      } else if (error instanceof GeolocationPositionError) {
-        Modal.error({
-          title: 'Location Access Required',
-          content: 'Please enable location services to check out.',
+      if (action === 'check-in') {
+        const result = await attendanceService.checkIn({
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          location: OFFICE_CONFIG.location.name,
+          notes: `Distance: ${locationData.distance}m`,
         });
+
+        await fetchTodayStatus();
+        await fetchMyAttendance();
+        const status = calculateAttendanceStatus(result.attendance.checkIn);
+        
+        if (status === 'late') {
+          message.warning(`Checked in at ${dayjs(result.attendance.checkIn, 'HH:mm:ss').format('hh:mm A')} - Running late`);
+        } else {
+          message.success(`Checked in successfully at ${dayjs(result.attendance.checkIn, 'HH:mm:ss').format('hh:mm A')}`);
+        }
       } else {
-        message.error('Failed to check out. Please try again.');
+        const result = await attendanceService.checkOut({
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          notes: `Distance: ${locationData.distance}m`,
+        });
+
+        await fetchTodayStatus();
+        await fetchMyAttendance();
+        message.success(`Checked out - Total working hours: ${result.hoursWorked?.toFixed(2)}`);
       }
-    } finally {
-      setCheckingLocation(false);
+
+      return true;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || `Failed to ${action === 'check-in' ? 'check in' : 'check out'}`;
+      message.error(errorMsg);
+      return false;
     }
   };
 
-  const calculateMonthlyStats = () => {
-    const monthRecords = attendanceHistory.filter(record => 
-      dayjs(record.date).month() === selectedMonth.month() &&
-      dayjs(record.date).year() === selectedMonth.year()
-    );
-
-    const presentDays = monthRecords.filter(r => r.status === 'present' || r.status === 'late').length;
-    const lateDays = monthRecords.filter(r => r.status === 'late').length;
-    const absentDays = monthRecords.filter(r => r.status === 'absent').length;
-    const totalWorkingHours = monthRecords.reduce((sum, r) => sum + (r.workingHours || 0), 0);
-    
-    return {
-      presentDays,
-      lateDays,
-      absentDays,
-      totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
-      attendanceRate: monthRecords.length > 0 ? Math.round((presentDays / monthRecords.length) * 100) : 0
-    };
-  };
-
+  // ============== Render Helpers ==============
   const stats = calculateMonthlyStats();
+  const currentTime = dayjs().format('hh:mm:ss A');
+  const isCheckedIn = todayAttendance !== null;
+  const isCheckedOut = todayAttendance?.checkOut !== undefined;
+  const isWithinRange = location?.isValid ?? false;
 
   const getStatusColor = (status: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       present: 'success',
       late: 'warning',
       absent: 'error',
       'half-day': 'default'
     };
-    return colors[status as keyof typeof colors];
+    return colors[status] || 'default';
   };
 
   const getListData = (value: Dayjs) => {
     const dateStr = value.format('YYYY-MM-DD');
     const record = attendanceHistory.find(r => r.date === dateStr);
-    
     if (!record) return [];
-    
     return [{
       type: getStatusColor(record.status),
       content: `${record.checkIn.slice(0, 5)} - ${record.checkOut?.slice(0, 5) || 'Working'}`
@@ -463,12 +389,17 @@ const AttendancePage: React.FC = () => {
     );
   };
 
+  const filteredHistory = attendanceHistory.filter(r => 
+    filterStatus === 'all' ? true : r.status === filterStatus
+  );
+
   const columns = [
     {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
-      render: (date: string) => dayjs(date).format('MMM DD, YYYY')
+      render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+      width: 120,
     },
     {
       title: 'Check In',
@@ -476,7 +407,8 @@ const AttendancePage: React.FC = () => {
       key: 'checkIn',
       render: (time: string) => (
         <Text strong>{dayjs(time, 'HH:mm:ss').format('hh:mm A')}</Text>
-      )
+      ),
+      width: 100,
     },
     {
       title: 'Check Out',
@@ -485,14 +417,16 @@ const AttendancePage: React.FC = () => {
       render: (time?: string) => time ? (
         <Text strong>{dayjs(time, 'HH:mm:ss').format('hh:mm A')}</Text>
       ) : (
-        <Tag color="blue">Still Working</Tag>
-      )
+        <Tag color="blue">Working</Tag>
+      ),
+      width: 100,
     },
     {
       title: 'Working Hours',
       dataIndex: 'workingHours',
       key: 'workingHours',
-      render: (hours?: number) => hours ? `${hours.toFixed(2)} hrs` : '-'
+      render: (hours?: number) => hours ? `${hours.toFixed(2)} hrs` : '-',
+      width: 120,
     },
     {
       title: 'Status',
@@ -500,51 +434,34 @@ const AttendancePage: React.FC = () => {
       key: 'status',
       render: (status: string) => (
         <Tag color={getStatusColor(status)}>{status.toUpperCase()}</Tag>
-      )
+      ),
+      width: 100,
     }
   ];
 
-  const currentTime = dayjs().format('hh:mm:ss A');
-  const isCheckedIn = todayAttendance !== null;
-  const isCheckedOut = todayAttendance?.checkOut !== undefined;
-
-  // Calculate distance from office if location is available
-  const distanceFromOffice = currentLocation
-    ? Math.round(
-        calculateDistance(
-          currentLocation.latitude,
-          currentLocation.longitude,
-          OFFICE_LOCATION.latitude,
-          OFFICE_LOCATION.longitude
-        )
-      )
-    : null;
-
-  const isWithinOfficeRange = distanceFromOffice !== null && distanceFromOffice <= MAX_DISTANCE_METERS;
-
   return (
-    <div className="page-transition-wrapper" style={{ padding: '24px', background: '#000000', minHeight: '100vh', animation: 'fadeIn 0.5s ease-in' }}>
-      <Title level={2}>
+    <div style={{ padding: '24px', background: '#000000', minHeight: '100vh' }}>
+      <Title level={2} style={{ color: '#fff', marginBottom: 8 }}>
         <ClockCircleOutlined style={{ marginRight: 12 }} />
         Attendance System
       </Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
-        Mark your attendance with location verification
+      <Text type="secondary" style={{ display: 'block', marginBottom: 24, fontSize: 14 }}>
+        Professional Attendance Management with Location Verification
       </Text>
 
-      {/* Fetch Location Button */}
+      {/* Location Status Card */}
       <Card style={{ marginBottom: 24, background: '#f0f5ff', borderColor: '#1890ff' }}>
         <Row gutter={16} align="middle">
           <Col flex="auto">
             <Space direction="vertical" size={4}>
               <Text strong style={{ fontSize: 16 }}>
                 <EnvironmentOutlined style={{ marginRight: 8 }} />
-                GPS Location Tracking
+                GPS Location Status
               </Text>
               <Text type="secondary">
-                {currentLocation 
-                  ? `Location detected: ${distanceFromOffice}m from office` 
-                  : 'Click to fetch your current GPS location'}
+                {location 
+                  ? `${location.distance}m from office - ${location.isValid ? '✓ Ready to check in' : '✗ Out of range'}`
+                  : 'Fetching location...'}
               </Text>
             </Space>
           </Col>
@@ -552,215 +469,91 @@ const AttendancePage: React.FC = () => {
             <Button
               type="primary"
               icon={<EnvironmentOutlined />}
-              size="large"
-              loading={checkingLocation}
-              onClick={requestLocationPermission}
-              style={{ minWidth: 160 }}
+              loading={verifying}
+              onClick={verifyLocationOnce}
             >
-              {currentLocation ? 'Refresh Location' : 'Fetch My Location'}
+              {location ? 'Refresh Location' : 'Fetch Location'}
             </Button>
           </Col>
         </Row>
       </Card>
 
-      {/* Location Status Alert */}
-      <Alert
-        message={
-          <Space>
-            <EnvironmentOutlined />
-            <span><strong>Office Location:</strong> {OFFICE_LOCATION.name}</span>
-          </Space>
-        }
-        description={
-          <div>
-            {checkingLocation ? (
-              <Space>
-                <Spin size="small" />
-                <Text>Verifying your location...</Text>
-              </Space>
-            ) : currentLocation ? (
-              <div>
-                <p style={{ marginBottom: 8 }}>
-                  <strong>Your distance from office:</strong>{' '}
-                  <Text strong style={{ color: isWithinOfficeRange ? '#52c41a' : '#ff4d4f' }}>
-                    {distanceFromOffice} meters
-                  </Text>
-                  {isWithinOfficeRange ? (
-                    <Tag color="success" style={{ marginLeft: 8 }}>
-                      <CheckCircleOutlined /> Within Range
-                    </Tag>
-                  ) : (
-                    <Tag color="error" style={{ marginLeft: 8 }}>
-                      <WarningOutlined /> Out of Range
-                    </Tag>
-                  )}
-                </p>
-                <p style={{ marginTop: 8, fontSize: 12, fontFamily: 'monospace', background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
-                  <strong>Your Current Location:</strong><br />
-                  Latitude: {currentLocation.latitude.toFixed(8)}<br />
-                  Longitude: {currentLocation.longitude.toFixed(8)}
-                </p>
-                <p style={{ marginTop: 8, fontSize: 12, fontFamily: 'monospace', background: '#f0f0f0', padding: '8px', borderRadius: '4px' }}>
-                  <strong>Office Location:</strong><br />
-                  Latitude: {OFFICE_LOCATION.latitude.toFixed(8)}<br />
-                  Longitude: {OFFICE_LOCATION.longitude.toFixed(8)}
-                </p>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => {
-                    const locationInfo = `Your Current Coordinates:\nLatitude: ${currentLocation.latitude}\nLongitude: ${currentLocation.longitude}\n\nOffice Coordinates:\nLatitude: ${OFFICE_LOCATION.latitude}\nLongitude: ${OFFICE_LOCATION.longitude}\n\nDistance: ${distanceFromOffice} meters`;
-                    navigator.clipboard.writeText(locationInfo);
-                    message.success('Location details copied to clipboard!');
-                  }}
-                  style={{ padding: 0, marginTop: 8 }}
-                >
-                  📋 Copy Location Details
-                </Button>
-                <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 8 }}>
-                  You must be within {MAX_DISTANCE_METERS} meters of the office to mark attendance.
-                </Text>
-              </div>
-            ) : (
-              <Text type="warning">
-                <WarningOutlined /> Location access required. Please enable location permissions.
-              </Text>
-            )}
-          </div>
-        }
-        type={isWithinOfficeRange ? 'success' : currentLocation ? 'warning' : 'info'}
-        showIcon
-        style={{ marginBottom: 24 }}
-      />
-
-      {/* Office Location Map */}
-      <Card 
-        title={
-          <Space>
-            <EnvironmentOutlined />
-            <span>Office Location - {OFFICE_LOCATION.name}</span>
-          </Space>
-        }
-        style={{ marginBottom: 24 }}
-      >
-        <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3778.346567406012!2d73.66970757550314!3d18.73805058239819!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2b14773c9f6fb%3A0x881d11b19fb4836!2sCodeServeTech%20Solutions!5e0!3m2!1sen!2sin!4v1762491294038!5m2!1sen!2sin"
-            width="100%"
-            height="100%"
-            style={{ 
-              border: 0,
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              borderRadius: '8px'
-            }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title="Office Location"
-          />
-        </div>
-        <div style={{ marginTop: 16, padding: '12px', background: '#f5f5f5', borderRadius: '8px' }}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Text type="secondary">Latitude:</Text>
-              <Text strong style={{ display: 'block' }}>{OFFICE_LOCATION.latitude}</Text>
-            </Col>
-            <Col span={12}>
-              <Text type="secondary">Longitude:</Text>
-              <Text strong style={{ display: 'block' }}>{OFFICE_LOCATION.longitude}</Text>
-            </Col>
-          </Row>
-          <Divider style={{ margin: '12px 0' }} />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <EnvironmentOutlined /> Attendance can only be marked within {MAX_DISTANCE_METERS} meters radius of this location.
-          </Text>
-        </div>
-      </Card>
-
       {/* Today's Attendance Card */}
       <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <Row gutter={16} align="middle">
-          <Col xs={24} md={8}>
-            <div style={{ textAlign: 'center', color: '#fff' }}>
-              <ClockCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-              <Title level={2} style={{ color: '#fff', margin: 0 }}>
-                {currentTime}
-              </Title>
-              <Text style={{ color: '#fff', fontSize: 16 }}>
-                {dayjs().format('dddd, MMMM DD, YYYY')}
-              </Text>
-            </div>
+          <Col xs={24} md={8} style={{ textAlign: 'center', color: '#fff' }}>
+            <ClockCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+            <Title level={2} style={{ color: '#fff', margin: 0 }}>
+              {currentTime}
+            </Title>
+            <Text style={{ color: '#fff', fontSize: 14 }}>
+              {dayjs().format('dddd, MMMM DD, YYYY')}
+            </Text>
           </Col>
-          <Col xs={24} md={8}>
-            <div style={{ textAlign: 'center' }}>
-              {!isCheckedIn ? (
+          
+          <Col xs={24} md={8} style={{ textAlign: 'center' }}>
+            {!isCheckedIn ? (
+              <Tooltip title={!isWithinRange ? 'You must be at the office' : ''}>
                 <Button
                   type="primary"
                   size="large"
-                  icon={checkingLocation ? <Spin /> : <CheckCircleOutlined />}
-                  onClick={handleCheckIn}
-                  loading={checkingLocation}
-                  disabled={!isWithinOfficeRange}
-                  style={{ 
-                    height: 60, 
-                    fontSize: 18,
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => performAttendanceAction('check-in')}
+                  loading={verifying}
+                  disabled={!isWithinRange}
+                  style={{
+                    height: 60,
+                    fontSize: 16,
                     background: '#fff',
                     color: '#667eea',
-                    border: 'none'
+                    border: 'none',
+                    minWidth: 140,
                   }}
                 >
-                  {checkingLocation ? 'Verifying Location...' : 'Check In'}
+                  Check In
                 </Button>
-              ) : !isCheckedOut ? (
-                <>
-                  <Text style={{ color: '#fff', fontSize: 16, display: 'block', marginBottom: 16 }}>
-                    Checked in at {dayjs(todayAttendance.checkIn, 'HH:mm:ss').format('hh:mm A')}
-                  </Text>
-                  <Button
-                    type="primary"
-                    size="large"
-                    danger
-                    icon={checkingLocation ? <Spin /> : <CloseCircleOutlined />}
-                    onClick={handleCheckOut}
-                    loading={checkingLocation}
-                    disabled={!isWithinOfficeRange}
-                    style={{ height: 60, fontSize: 18 }}
-                  >
-                    {checkingLocation ? 'Verifying Location...' : 'Check Out'}
-                  </Button>
-                </>
-              ) : (
-                <div style={{ color: '#fff' }}>
-                  <CheckCircleOutlined style={{ fontSize: 32, marginBottom: 8 }} />
-                  <Text style={{ color: '#fff', fontSize: 16, display: 'block' }}>
-                    Completed for today
-                  </Text>
-                  <Text style={{ color: '#fff', fontSize: 14 }}>
-                    {todayAttendance.workingHours?.toFixed(2)} working hours
-                  </Text>
-                </div>
-              )}
-            </div>
+              </Tooltip>
+            ) : !isCheckedOut ? (
+              <Tooltip title={!isWithinRange ? 'You must be at the office' : ''}>
+                <Button
+                  type="primary"
+                  size="large"
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => performAttendanceAction('check-out')}
+                  loading={verifying}
+                  disabled={!isWithinRange}
+                  style={{ height: 60, fontSize: 16, minWidth: 140 }}
+                >
+                  Check Out
+                </Button>
+              </Tooltip>
+            ) : (
+              <div style={{ color: '#fff' }}>
+                <CheckCircleOutlined style={{ fontSize: 32, marginBottom: 8 }} />
+                <Text style={{ color: '#fff', fontSize: 14, display: 'block' }}>
+                  Completed
+                </Text>
+                <Text style={{ color: '#fff', fontSize: 12 }}>
+                  {todayAttendance.workingHours?.toFixed(2)} hrs
+                </Text>
+              </div>
+            )}
           </Col>
-          <Col xs={24} md={8}>
-            <div style={{ color: '#fff' }}>
-              <Text style={{ color: '#fff', display: 'block', marginBottom: 8 }}>
-                Office Hours: {OFFICE_START_TIME} - {OFFICE_END_TIME}
-              </Text>
-              <Text style={{ color: '#fff', display: 'block' }}>
-                Status: {isCheckedIn ? (
-                  <Tag color={getStatusColor(todayAttendance.status)}>
-                    {todayAttendance.status.toUpperCase()}
-                  </Tag>
-                ) : (
-                  <Tag>NOT CHECKED IN</Tag>
-                )}
-              </Text>
-            </div>
+
+          <Col xs={24} md={8} style={{ color: '#fff' }}>
+            <Text style={{ color: '#fff', display: 'block', marginBottom: 8, fontSize: 14 }}>
+              Office Hours: {OFFICE_CONFIG.startTime} - {OFFICE_CONFIG.endTime}
+            </Text>
+            <Text style={{ color: '#fff', display: 'block', fontSize: 14 }}>
+              Status: {isCheckedIn ? (
+                <Tag color={getStatusColor(todayAttendance.status)}>
+                  {todayAttendance.status.toUpperCase()}
+                </Tag>
+              ) : (
+                <Tag>NOT CHECKED IN</Tag>
+              )}
+            </Text>
           </Col>
         </Row>
       </Card>
@@ -770,7 +563,7 @@ const AttendancePage: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Present Days"
+              title="On Time"
               value={stats.presentDays}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -780,7 +573,7 @@ const AttendancePage: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Late Days"
+              title="Late"
               value={stats.lateDays}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: '#fa8c16' }}
@@ -790,8 +583,8 @@ const AttendancePage: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Total Working Hours"
-              value={stats.totalWorkingHours}
+              title="Total Hours"
+              value={stats.totalHours}
               suffix="hrs"
               valueStyle={{ color: '#1890ff' }}
             />
@@ -810,7 +603,7 @@ const AttendancePage: React.FC = () => {
       </Row>
 
       {/* Calendar View */}
-      <Card title="Monthly Calendar" style={{ marginBottom: 24 }}>
+      <Card title="Monthly Calendar View" style={{ marginBottom: 24 }}>
         <Calendar
           value={selectedMonth}
           onSelect={setSelectedMonth}
@@ -820,32 +613,50 @@ const AttendancePage: React.FC = () => {
 
       {/* Attendance History */}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Title level={3}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Title level={3} style={{ margin: 0 }}>
             <HistoryOutlined /> Attendance History
           </Title>
           <Space>
-            <RangePicker />
-            <Select defaultValue="all" style={{ width: 120 }}>
+            {canViewTeam && (
+              <Select
+                value={viewMode}
+                onChange={setViewMode}
+                style={{ width: 120 }}
+              >
+                <Select.Option value="my">My Attendance</Select.Option>
+                <Select.Option value="team">Team Attendance</Select.Option>
+              </Select>
+            )}
+            <Select
+              value={filterStatus}
+              onChange={setFilterStatus}
+              style={{ width: 120 }}
+            >
               <Select.Option value="all">All Status</Select.Option>
-              <Select.Option value="present">Present</Select.Option>
+              <Select.Option value="present">On Time</Select.Option>
               <Select.Option value="late">Late</Select.Option>
               <Select.Option value="absent">Absent</Select.Option>
             </Select>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => viewMode === 'my' ? fetchMyAttendance() : fetchTeamAttendance()}
+              loading={loading || teamLoading}
+            />
           </Space>
         </div>
-        
+
         <Table
           columns={columns}
-          dataSource={attendanceHistory}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          dataSource={filteredHistory.map(r => ({ ...r, key: r.id }))}
+          loading={loading || teamLoading}
+          pagination={{ pageSize: 15, showSizeChanger: true, showQuickJumper: true }}
           scroll={{ x: 'max-content' }}
+          locale={{ emptyText: 'No records found' }}
         />
       </Card>
 
-      {/* Employee Badge Verification Modal */}
+      {/* Badge Modal */}
       <EmployeeBadgeModal
         visible={showBadgeModal}
         onClose={() => setShowBadgeModal(false)}
@@ -858,5 +669,4 @@ const AttendancePage: React.FC = () => {
     </div>
   );
 };
-
 export default AttendancePage;
